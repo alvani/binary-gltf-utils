@@ -132,31 +132,33 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   });
 
   // TODO: embed images into body (especially if already embedded as base64)
-  Object.keys(scene.images).forEach(function (imageId) {
-    const image = scene.images[imageId];
-    const uri = image.uri;
+  if (scene.images) {
+    Object.keys(scene.images).forEach(function (imageId) {
+      const image = scene.images[imageId];
+      const uri = image.uri;
 
-    const promise = addToBody(uri).then(function (obj) {
-      const bufferViewId = 'binary_images_' + imageId;
-      // TODO: add extension properties
-      image.extensions =
-        { KHR_binary_glTF:
-          { bufferView: bufferViewId
-          , mimeType: 'image/i-dont-know'
-          , height: 9999
-          , width: 9999
-          }
-        };
+      const promise = addToBody(uri).then(function (obj) {
+        const bufferViewId = 'binary_images_' + imageId;
+        // TODO: add extension properties
+        image.extensions =
+          { KHR_binary_glTF:
+            { bufferView: bufferViewId
+            , mimeType: 'image/i-dont-know'
+            , height: 9999
+            , width: 9999
+            }
+          };
 
-      scene.bufferViews[bufferViewId] =
-        { buffer: BUFFER_NAME
-        , byteLength: obj.length
-        , byteOffset: obj.offset
-        };
+        scene.bufferViews[bufferViewId] =
+          { buffer: BUFFER_NAME
+          , byteLength: obj.length
+          , byteOffset: obj.offset
+          };
+      });
+
+      promises.push(promise);
     });
-
-    promises.push(promise);
-  });
+  }
 
   return Promise.all(promises).return(scene);
 }).then(function (scene) {
