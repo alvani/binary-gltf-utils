@@ -6,6 +6,7 @@ const Promise = require('bluebird');
 const path = require('path');
 const util = require('util');
 const fs = Promise.promisifyAll(require('fs'));
+const cesium = require('./cesium');
 
 const embedArr = [ 'textures', 'shaders' ];
 const embed = {};
@@ -19,9 +20,39 @@ const argv = require('yargs')
   .alias('e', 'embed')
   .boolean('cesium')
   .describe('cesium', 'sets the old body buffer name for compatibility with Cesium')
+  .boolean('b3dm')
+  .describe('b3dm', 'output b3dm files instead of gltf')
+  .boolean('rtc')
+  .describe('rtc', '[lon] [lat] add relative to center position extension')
+  .string('lon')
+  .describe('lon', 'longitude for rtc')
+  .string('lat')
+  .describe('lat', 'latitude for rtc')
+  .string('fs')
+  .describe('fs', 'name of external fragment shader')
+  .string('vs')
+  .describe('vs', 'name of external vertex shader')
   .help('h')
   .alias('h', 'help')
   .argv;
+
+var lon, lat;
+if (argv.rtc) {
+  if (!argv.lon || !argv.lat) {
+    console.error('Pleasep provide [lon] [lat] parameter after --rtc');
+    return;
+  }
+  lon = parseFloat(argv.lon);
+  if (!lon) {
+    console.error('Pleasep provide valid [lon] value');
+    return;
+  }
+  lat = parseFloat(argv.lat);
+  if (!lat) {
+    console.error('Pleasep provide valid [lat] value');
+    return;
+  }  
+}
 
 if (argv.embed) {
   // If just specified as --embed, embed all types into body.
@@ -70,11 +101,30 @@ function addToBody(uri) {
 
 fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   // Modify the GLTF data to reference the buffer in the body instead of external references.
-  const scene = JSON.parse(gltf);
+  const scene = JSON.parse(gltf);  
 
   // Let a GLTF parser know that it is using the Binary GLTF extension.
   if (Array.isArray(scene.extensionsUsed)) scene.extensionsUsed.push('KHR_binary_glTF');
   else scene.extensionsUsed = [ 'KHR_binary_glTF' ];
+
+  if (argv.rtc) {
+    scene.extensionsUsed.push('CESIUM_RTC');
+
+    var wpos = cesium.fromDegrees(lon, lat, 0.0);
+
+    var pos = {
+      center: [
+        wpos.x,
+        wpos.y,
+        wpos.z
+      ]
+    };    
+
+    if (!scene.extensions) {
+      scene.extensions = {};      
+    }
+    scene.extensions['CESIUM_RTC'] = pos;
+  }
 
   const bufferPromises = [];
   Object.keys(scene.buffers).forEach(function (bufferId) {
@@ -93,7 +143,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
     });
 
     bufferPromises.push(promise);
-  });
+  });  
 
   // Run this on the existing buffers first so that the buffer view code can read from it.
   return Promise.all(bufferPromises).return(scene);
@@ -131,33 +181,35 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
     promises.push(promise);
   });
 
-  // TODO: embed images into body (especially if already embedded as base64)
-  if (scene.images) {
-    Object.keys(scene.images).forEach(function (imageId) {
-      const image = scene.images[imageId];
-      const uri = image.uri;
+  if (embed.textures) {
+    // TODO: embed images into body (especially if already embedded as base64)
+    if (scene.images) {
+      Object.keys(scene.images).forEach(function (imageId) {
+        const image = scene.images[imageId];
+        const uri = image.uri;
 
-      const promise = addToBody(uri).then(function (obj) {
-        const bufferViewId = 'binary_images_' + imageId;
-        // TODO: add extension properties
-        image.extensions =
-          { KHR_binary_glTF:
-            { bufferView: bufferViewId
-            , mimeType: 'image/i-dont-know'
-            , height: 9999
-            , width: 9999
-            }
-          };
+        const promise = addToBody(uri).then(function (obj) {
+          const bufferViewId = 'binary_images_' + imageId;
+          // TODO: add extension properties
+          image.extensions =
+            { KHR_binary_glTF:
+              { bufferView: bufferViewId
+              , mimeType: 'image/i-dont-know'
+              , height: 9999
+              , width: 9999
+              }
+            };
 
-        scene.bufferViews[bufferViewId] =
-          { buffer: BUFFER_NAME
-          , byteLength: obj.length
-          , byteOffset: obj.offset
-          };
+          scene.bufferViews[bufferViewId] =
+            { buffer: BUFFER_NAME
+            , byteLength: obj.length
+            , byteOffset: obj.offset
+            };
+        });
+
+        promises.push(promise);
       });
-
-      promises.push(promise);
-    });
+    }
   }
 
   return Promise.all(promises).return(scene);
@@ -172,9 +224,78 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
         }
       };
   }
-  else scene.buffers = undefined;
+  else scene.buffers = undefined;   
 
-  const newSceneStr = JSON.stringify(scene);
+  //replace matrix
+  // if (scene.nodes) {
+  //   Object.keys(scene.nodes).forEach(function(nodeName) {
+  //     var node = scene.nodes[nodeName];
+  //     if (node.name != 'Y_UP_Transform') {
+  //       node.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];  
+  //     }      
+  //   });
+  // }
+
+  //replace shader
+  if (argv.vs || argv.fs) {
+    if (scene.shaders) {
+      Object.keys(scene.shaders).forEach(function(shaderId) {      
+        var shader = scene.shaders[shaderId];
+        if (shader.type) {
+          if (argv.fs && shader.type === 35632) {
+            shader.uri = argv.fs;
+          }
+          if (argv.vs && shader.type === 35633) {
+            shader.uri = argv.vs;
+          }
+        }
+      }); 
+    }
+  }
+
+  if (scene.techniques) {
+    Object.keys(scene.techniques).forEach(function(techId) {
+      var tech = scene.techniques[techId];
+      if (tech.states) {
+        var en = tech.states.enable;
+        if (en) {          
+          var idx = -1;
+          for (let i = 0; i < en.length; ++i) {
+            // remove blending
+            if (en[i] === 3042) {
+              idx = i;
+              break;
+            }            
+          }  
+          if (idx != -1) {
+            en.splice(idx, 1);            
+          }        
+        }   
+      }
+
+      if (argv.b3dm) {
+        if (tech.attributes) {
+          tech.attributes['a_batchId'] = 'batchId';
+        }
+        if (tech.parameters) {
+          tech.parameters['batchId'] = {
+            semantic: 'BATCHID',
+            type: 5126
+          };
+        }
+      }
+
+      if (argv.rtc) {        
+        if (tech.parameters && tech.parameters.modelViewMatrix) {
+          tech.parameters.modelViewMatrix['semantic'] = 'CESIUM_RTC_MODELVIEW';
+        }
+      }
+    });
+  }
+
+  const newSceneStr = JSON.stringify(scene);  
+  // console.log(argv.cesium);
+  console.log(newSceneStr);
   const sceneLength = Buffer.byteLength(newSceneStr);
   // As body is 4-byte aligned, the scene length must be padded to have a multiple of 4.
   // jshint bitwise:false
@@ -182,33 +303,49 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   // jshint bitwise:true
 
   // Header is 20 bytes long.
-  const bodyOffset = paddedSceneLength + 20;
+  var bodyOffset = paddedSceneLength + 20;
   const fileLength = bodyOffset + bodyLength;
 
   // Let's create our GLB file!
-  const glbFile = new Buffer(fileLength);
+  var bufferLength = fileLength;
+  if (argv.b3dm) {
+    bufferLength = bufferLength + 20;   
+    bodyOffset += 20;
+  }
+
+  const glbFile = new Buffer(bufferLength);
+  var pad = 0;
+
+  if (argv.b3dm) {    
+    // create b3dm without metadata
+    glbFile.writeUInt32BE(0x6233646D, pad);
+    glbFile.writeUInt32LE(1, pad += 4);  //version
+    glbFile.writeUInt32LE(bufferLength, pad += 4);  //filesize
+    glbFile.writeUInt32LE(1, pad += 4);  //model count
+    glbFile.writeUInt32LE(0, pad += 4);  //batch table length    
+  }
 
   // Magic number (the ASCII string 'glTF').
-  glbFile.writeUInt32BE(0x676C5446, 0);
+  glbFile.writeUInt32BE(0x676C5446, pad += 4);
 
   // Binary GLTF is little endian.
   // Version of the Binary glTF container format as a uint32 (vesrion 1).
-  glbFile.writeUInt32LE(1, 4);
+  glbFile.writeUInt32LE(1, pad += 4);
 
   // Total length of the generated file in bytes (uint32).
-  glbFile.writeUInt32LE(fileLength, 8);
+  glbFile.writeUInt32LE(fileLength, pad += 4);
 
   // Total length of the scene in bytes (uint32).
-  glbFile.writeUInt32LE(paddedSceneLength, 12);
+  glbFile.writeUInt32LE(paddedSceneLength, pad += 4);
 
   // Scene format as a uint32 (JSON is 0).
-  glbFile.writeUInt32LE(0, 16);
+  glbFile.writeUInt32LE(0, pad += 4);
 
   // Write the scene.
-  glbFile.write(newSceneStr, 20);
+  glbFile.write(newSceneStr, pad += 4);  
 
   // Add spaces as padding to ensure scene is a multiple of 4 bytes.
-  for (let i = sceneLength + 20; i < bodyOffset; ++i) glbFile[i] = 0x20;
+  for (let i = sceneLength + pad; i < bodyOffset; ++i) glbFile[i] = 0x20;
 
   // Write the body.
   for (let i = 0; i < bodyParts.length; i += 2) {
@@ -217,7 +354,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
     contents.copy(glbFile, bodyOffset + offset);
   }
 
-  return fs.writeFileAsync(filename.replace(/\.gltf$/, '.glb'), glbFile);
+  return fs.writeFileAsync(filename.replace(/\.gltf$/, argv.b3dm ? '.b3dm' : '.glb'), glbFile);
 }).error(function (error) {
   console.error('Failed to create binary GLTF file:');
   console.error('----------------------------------');
