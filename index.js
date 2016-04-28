@@ -81,8 +81,9 @@ const bodyParts = [];
 
 const base64Regexp = /^data:.*?;base64,/;
 const containingFolder = path.dirname(filename);
+var rotMat;
 
-function addToBody(uri) {
+function addToBody(uri) {  
   let promise;
   if (uri.startsWith('data:')) {
     if (!base64Regexp.test(uri)) throw new Error('unsupported data URI');
@@ -92,7 +93,7 @@ function addToBody(uri) {
 
   return promise.then(function (contents) {
     const offset = bodyLength;
-    bodyParts.push(offset, contents);
+    bodyParts.push(offset, contents);  
     const length = contents.length;
     bodyLength += length;
     return { offset, length };
@@ -118,7 +119,8 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
         wpos.y,
         wpos.z
       ]
-    };    
+    };        
+    rotMat = cesium.eastNorthUpToFixedFrame(wpos);    
 
     if (!scene.extensions) {
       scene.extensions = {};      
@@ -253,6 +255,42 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
     }
   }
 
+  // manipulate vertex
+  if (lon && lat) {
+    if (scene.meshes) {
+      Object.keys(scene.meshes).forEach(function(meshName) {
+        var mesh = scene.meshes[meshName];
+        console.log(meshName);
+        if (mesh.primitives) {
+          for (let i = 0; i < mesh.primitives.length; ++i) {            
+            var obj = mesh.primitives[i];
+            var an = obj.attributes.POSITION;
+            if (an) {
+              var a = scene.accessors[an];
+              var bv = scene.bufferViews[a.bufferView];
+
+              var offset = bv.byteOffset + a.byteOffset;
+              const contents = bodyParts[1];
+              var f32 = new Float32Array(contents.buffer, contents.byteOffset + offset, a.byteStride * a.count / Float32Array.BYTES_PER_ELEMENT);
+
+              for (let j = 0; j < f32.length; j+=3) {
+                var x = f32[j];
+                var y = f32[j + 1];
+                var z = f32[j + 2];
+
+                f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
+                f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
+                f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;
+              }
+            }
+          }
+        }
+      });
+    }
+
+  }
+
+
   if (scene.techniques) {
     Object.keys(scene.techniques).forEach(function(techId) {
       var tech = scene.techniques[techId];
@@ -295,7 +333,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 
   const newSceneStr = JSON.stringify(scene);  
   // console.log(argv.cesium);
-  console.log(newSceneStr);
+  // console.log(newSceneStr);
   const sceneLength = Buffer.byteLength(newSceneStr);
   // As body is 4-byte aligned, the scene length must be padded to have a multiple of 4.
   // jshint bitwise:false
