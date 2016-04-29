@@ -1,4 +1,4 @@
-Fork of binary-gltf-utils.
+Fork of binary-gltf-utils for Cesium centric features.
 
 Added functionalities: 
 - converts to .b3dm
