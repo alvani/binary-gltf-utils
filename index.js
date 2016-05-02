@@ -21,7 +21,7 @@ const argv = require('yargs')
   .boolean('cesium')
   .describe('cesium', 'sets the old body buffer name for compatibility with Cesium')
   .boolean('b3dm')
-  .describe('b3dm', 'output b3dm files instead of gltf')
+  .describe('b3dm', 'outputs b3dm files instead of gltf')
   .boolean('rtc')
   .describe('rtc', '[lon] [lat] add relative to center position extension')
   .string('lon')
@@ -32,6 +32,8 @@ const argv = require('yargs')
   .describe('fs', 'name of external fragment shader')
   .string('vs')
   .describe('vs', 'name of external vertex shader')
+  .string('bounds')
+  .describe('bounds', 'filename for .json thath contains bounds')
   .help('h')
   .alias('h', 'help')
   .argv;
@@ -82,6 +84,7 @@ const bodyParts = [];
 const base64Regexp = /^data:.*?;base64,/;
 const containingFolder = path.dirname(filename);
 var rotMat;
+var worldPos;
 
 function addToBody(uri) {  
   let promise;
@@ -112,6 +115,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
     scene.extensionsUsed.push('CESIUM_RTC');
 
     var wpos = cesium.fromDegrees(lon, lat, 0.0);
+    worldPos = wpos;
 
     var pos = {
       center: [
@@ -119,8 +123,10 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
         wpos.y,
         wpos.z
       ]
-    };        
+    }; 
+    console.log(wpos);       
     rotMat = cesium.eastNorthUpToFixedFrame(wpos);    
+    console.log(rotMat);
 
     if (!scene.extensions) {
       scene.extensions = {};      
@@ -256,6 +262,10 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   }
 
   // manipulate vertex
+  var maxX, maxY, maxZ, maxHeight;
+  var minX, minY, minZ, minHeight;  
+  maxX = maxY = maxZ = maxHeight = Number.MIN_VALUE;
+  minX = minY = minZ = minHeight = Number.MAX_VALUE;
   if (lon && lat) {
     if (scene.meshes) {
       Object.keys(scene.meshes).forEach(function(meshName) {
@@ -276,11 +286,42 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
               for (let j = 0; j < f32.length; j+=3) {
                 var x = f32[j];
                 var y = f32[j + 1];
-                var z = f32[j + 2];
+                var z = f32[j + 2];   
+
+                if (z > maxHeight) {
+                  maxHeight = z;
+                }                                 
+                if (z < minHeight) {
+                  minHeight = z;
+                }
 
                 f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
                 f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
-                f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;
+                f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;                
+
+                x = f32[j];
+                y = f32[j + 1];
+                z = f32[j + 2];
+
+                if (x > maxX) {
+                  maxX = x;
+                }
+                if (y > maxY) {
+                  maxY = y;
+                }
+                if (z > maxZ) {
+                  maxZ = z;
+                }
+
+                if (x < minX) {
+                  minX = x;
+                }
+                if (y < minY) {
+                  minY = y;
+                }
+                if (z < minZ) {
+                  minZ = z;
+                }
               }
             }
           }
@@ -329,6 +370,101 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
         }
       }
     });
+  }
+
+  if (argv.bounds && lon && lat) {    
+    var h  = maxHeight - minHeight; 
+    // console.log(h, maxHeight, minHeight);       
+
+    var left   = worldPos.x + minX;
+    var right  = worldPos.x + maxX;    
+    var front  = worldPos.y + minY;
+    var back   = worldPos.y + maxY;    
+    var bottom = worldPos.z + minZ;
+    var top    = worldPos.z + maxZ;
+
+    // var bottom  = worldPos.y + minY;
+    // var top     = worldPos.y + maxY;    
+    // var front   = worldPos.z + minZ;
+    // var back    = worldPos.z + maxZ;
+
+
+    // console.log('minX', minX);
+    // console.log('maxX', maxX);
+    // console.log('minY', minY);
+    // console.log('maxY', maxY);
+    // console.log('minZ', minZ);
+    // console.log('maxZ', maxZ);
+    // console.log(minX, maxX, minY, maxY, minZ, maxZ);
+    // console.log(left, right, front, back, bottom, top);
+
+    // create bounding box, starts from left, front, bottom and continue clock wise, from front face to back
+    var p1 = {x: left,  y: front, z: bottom};
+    var p2 = {x: left,  y: front, z: top};
+    var p3 = {x: right, y: front, z: top};
+    var p4 = {x: right, y: front, z: bottom};
+    var p5 = {x: left,  y: back,  z: bottom};
+    var p6 = {x: left,  y: back,  z: top};
+    var p7 = {x: right, y: back,  z: top};
+    var p8 = {x: right, y: back,  z: bottom};
+
+    var lons = [], lats = [];
+    var g;
+    g = cesium.fromCartesian(p1);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p2);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p3);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p4);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p5);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p6);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p7);
+    lons.push(g.lon); lats.push(g.lat);
+    g = cesium.fromCartesian(p8);
+    lons.push(g.lon); lats.push(g.lat);
+
+    var comp = function(a, b) {
+      return a - b;
+    }
+
+    lons.sort(comp);
+    lats.sort(comp);    
+
+    // console.log(lons, lats);
+
+    // west, south, east, north, minimum height, maximum height
+    var bounds = {
+      region: [
+        lons[0],
+        lats[0],
+        lons[lons.length - 1],
+        lats[lats.length - 1],
+        0,
+        h
+      ]
+    };
+
+    var str = JSON.stringify(bounds);
+    const len = Buffer.byteLength(str);
+
+
+    // console.log(worldPos);
+    // var geo = cesium.fromCartesian(worldPos);
+    // console.log(geo);    
+
+    var fn = argv.bounds;
+    if (!fn.endsWith('.json')) {
+      fn = fn + '.json';
+    }
+    fn = path.join(path.dirname(filename), fn);    
+
+    const bFile = new Buffer(len);
+    bFile.write(str);
+    fs.writeFileAsync(fn, bFile);
   }
 
   const newSceneStr = JSON.stringify(scene);  

@@ -8,8 +8,18 @@ var wgs84RadiiSquared = {
 	z: 6356752.3142451793 * 6356752.3142451793
 };
 
+var ellipsoid = {
+    x: 6378137.0, 
+    y: 6378137.0, 
+    z: 6356752.3142451793
+}; 
+
 function toRadians(degrees) {
 	return degrees * RADIANS_PER_DEGREE;
+}
+
+function toDegrees(radians) {
+    return radians / RADIANS_PER_DEGREE;
 }
 
 function magnitudeSquared(v) {
@@ -34,6 +44,13 @@ function multiplyComponents(left, right, result) {
     result.x = left.x * right.x;
     result.y = left.y * right.y;
     result.z = left.z * right.z;
+    return result;
+}
+
+function subtract(left, right, result) {    
+    result.x = left.x - right.x;
+    result.y = left.y - right.y;
+    result.z = left.z - right.z;
     return result;
 }
 
@@ -97,12 +114,7 @@ function oneOverRadiiSquared(v) {
     };
 }
 
-function geodeticSurfaceNormal(cartesian) {
-    var ellipsoid = {
-        x: 6378137.0, 
-        y: 6378137.0, 
-        z: 6356752.3142451793
-    }; 
+function geodeticSurfaceNormal(cartesian) {    
     var oors = oneOverRadiiSquared(ellipsoid);
     var result = {};
     multiplyComponents(cartesian, oors, result);    
@@ -176,3 +188,117 @@ exports.fromDegrees = function(longitude, latitude, height) {
     	z: k.z + n.z
     };
 }
+
+var wgs84OneOverRadii = {x: 1.0 / 6378137.0, y: 1.0 / 6378137.0, z: 1.0 / 6356752.3142451793};
+var wgs84OneOverRadiiSquared = {x: 1.0 / (6378137.0 * 6378137.0), y: 1.0 / (6378137.0 * 6378137.0), z: 1.0 / (6356752.3142451793 * 6356752.3142451793)};
+var wgs84CenterToleranceSquared = 0.1;
+
+function scaleToGeodeticSurface(cartesian, oneOverRadii, oneOverRadiiSquared, centerToleranceSquared) {    
+    var positionX = cartesian.x;
+    var positionY = cartesian.y;
+    var positionZ = cartesian.z;
+
+    var oneOverRadiiX = oneOverRadii.x;
+    var oneOverRadiiY = oneOverRadii.y;
+    var oneOverRadiiZ = oneOverRadii.z;
+
+    var x2 = positionX * positionX * oneOverRadiiX * oneOverRadiiX;
+    var y2 = positionY * positionY * oneOverRadiiY * oneOverRadiiY;
+    var z2 = positionZ * positionZ * oneOverRadiiZ * oneOverRadiiZ;
+
+    // Compute the squared ellipsoid norm.
+    var squaredNorm = x2 + y2 + z2;
+    var ratio = Math.sqrt(1.0 / squaredNorm);
+
+    // As an initial approximation, assume that the radial intersection is the projection point.
+    var intersection = {};
+    multiplyByScalar(cartesian, ratio, intersection);
+
+    // If the position is near the center, the iteration will not converge.
+    if (squaredNorm < centerToleranceSquared) {
+        return !isFinite(ratio) ? undefined : intersection;
+    }
+
+    var oneOverRadiiSquaredX = oneOverRadiiSquared.x;
+    var oneOverRadiiSquaredY = oneOverRadiiSquared.y;
+    var oneOverRadiiSquaredZ = oneOverRadiiSquared.z;
+
+    // Use the gradient at the intersection point in place of the true unit normal.
+    // The difference in magnitude will be absorbed in the multiplier.
+    var gradient = {};
+    gradient.x = intersection.x * oneOverRadiiSquaredX * 2.0;
+    gradient.y = intersection.y * oneOverRadiiSquaredY * 2.0;
+    gradient.z = intersection.z * oneOverRadiiSquaredZ * 2.0;
+
+    // Compute the initial guess at the normal vector multiplier, lambda.
+    var lambda = (1.0 - ratio) * magnitude(cartesian) / (0.5 * magnitude(gradient));
+    var correction = 0.0;
+
+    var func;
+    var denominator;
+    var xMultiplier;
+    var yMultiplier;
+    var zMultiplier;
+    var xMultiplier2;
+    var yMultiplier2;
+    var zMultiplier2;
+    var xMultiplier3;
+    var yMultiplier3;
+    var zMultiplier3;
+
+    do {
+        lambda -= correction;
+
+        xMultiplier = 1.0 / (1.0 + lambda * oneOverRadiiSquaredX);
+        yMultiplier = 1.0 / (1.0 + lambda * oneOverRadiiSquaredY);
+        zMultiplier = 1.0 / (1.0 + lambda * oneOverRadiiSquaredZ);
+
+        xMultiplier2 = xMultiplier * xMultiplier;
+        yMultiplier2 = yMultiplier * yMultiplier;
+        zMultiplier2 = zMultiplier * zMultiplier;
+
+        xMultiplier3 = xMultiplier2 * xMultiplier;
+        yMultiplier3 = yMultiplier2 * yMultiplier;
+        zMultiplier3 = zMultiplier2 * zMultiplier;
+
+        func = x2 * xMultiplier2 + y2 * yMultiplier2 + z2 * zMultiplier2 - 1.0;
+
+        // "denominator" here refers to the use of this expression in the velocity and acceleration
+        // computations in the sections to follow.
+        denominator = x2 * xMultiplier3 * oneOverRadiiSquaredX + y2 * yMultiplier3 * oneOverRadiiSquaredY + z2 * zMultiplier3 * oneOverRadiiSquaredZ;
+
+        var derivative = -2.0 * denominator;
+
+        correction = func / derivative;
+    } while (Math.abs(func) > 0.000000000001);
+
+    return {x: positionX * xMultiplier, y: positionY * yMultiplier, z: positionZ * zMultiplier}; 
+}
+
+// returns {lon, lat, height}
+exports.fromCartesian = function(cartesian) {
+    var oneOverRadii = wgs84OneOverRadii;
+    var oneOverRadiiSquared = wgs84OneOverRadiiSquared;
+    var centerToleranceSquared = wgs84CenterToleranceSquared;
+
+    //`cartesian is required.` is thrown from scaleToGeodeticSurface
+    var p = scaleToGeodeticSurface(cartesian, oneOverRadii, oneOverRadiiSquared, centerToleranceSquared);    
+
+    if (!p) {
+        return undefined;
+    }
+
+    var n = {};
+    multiplyComponents(cartesian, oneOverRadiiSquared, n);
+    normalize(n, n);
+
+    var h = {};
+    subtract(cartesian, p, h);
+
+    var longitude = Math.atan2(n.y, n.x);
+    var latitude = Math.asin(n.z);
+    var height = sign(dot(h, cartesian)) * magnitude(h);
+
+    return {lon: longitude, lat: latitude, height: height};
+    // return {lon: toDegrees(longitude), lat: toDegrees(latitude), height: height};        
+};
