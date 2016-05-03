@@ -34,6 +34,12 @@ const argv = require('yargs')
   .describe('vs', 'name of external vertex shader')
   .string('bounds')
   .describe('bounds', 'filename for .json thath contains bounds')
+  .string('scaleX')
+  .describe('scaleX', 'scale value for x axis')
+  .string('scaleY')
+  .describe('scaleY', 'scale value for x axis')
+  .string('scaleZ')
+  .describe('scaleZ', 'scale value for x axis')
   .help('h')
   .alias('h', 'help')
   .argv;
@@ -266,7 +272,11 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   var minX, minY, minZ, minHeight;  
   maxX = maxY = maxZ = maxHeight = Number.MIN_VALUE;
   minX = minY = minZ = minHeight = Number.MAX_VALUE;
-  if (lon && lat) {
+  var scaleX = parseFloat(argv.scaleX);
+  var scaleY = parseFloat(argv.scaleY);
+  var scaleZ = parseFloat(argv.scaleZ);
+
+  if (rotMat || scaleX || scaleY || scaleZ) {
     if (scene.meshes) {
       Object.keys(scene.meshes).forEach(function(meshName) {
         var mesh = scene.meshes[meshName];
@@ -283,7 +293,17 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
               const contents = bodyParts[1];
               var f32 = new Float32Array(contents.buffer, contents.byteOffset + offset, a.byteStride * a.count / Float32Array.BYTES_PER_ELEMENT);
 
-              for (let j = 0; j < f32.length; j+=3) {
+              for (let j = 0; j < f32.length; j+=3) {                
+                if (scaleX) {
+                  f32[j] *= scaleX;
+                }
+                if (scaleY) {
+                  f32[j + 1] *= scaleY;
+                }
+                if (scaleZ) {
+                  f32[j + 2] *= scaleZ;
+                }
+
                 var x = f32[j];
                 var y = f32[j + 1];
                 var z = f32[j + 2];   
@@ -295,9 +315,11 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
                   minHeight = z;
                 }
 
-                f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
-                f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
-                f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;                
+                if (rotMat) {
+                  f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
+                  f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
+                  f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;                
+                }                
 
                 x = f32[j];
                 y = f32[j + 1];
