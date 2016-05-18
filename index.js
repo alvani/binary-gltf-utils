@@ -39,7 +39,14 @@ const argv = require('yargs')
   .string('scaleY')
   .describe('scaleY', 'scale value for x axis')
   .string('scaleZ')
-  .describe('scaleZ', 'scale value for x axis')
+  .describe('scaleZ', 'scale value for x axis')  
+  // ccw, z up x front y right
+  .string('yaw')
+  .describe('yaw', 'yaw value in degrees')
+  .string('pitch')
+  .describe('pitch', 'pitch value in degrees')
+  .string('roll')
+  .describe('roll', 'roll value in degrees')
   .help('h')
   .alias('h', 'help')
   .argv;
@@ -240,11 +247,12 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   }
   else scene.buffers = undefined;   
 
-  //replace matrix
+  // replace matrix
   // if (scene.nodes) {
   //   Object.keys(scene.nodes).forEach(function(nodeName) {
   //     var node = scene.nodes[nodeName];
-  //     if (node.name != 'Y_UP_Transform') {
+  //     if (node.name == 'Y_UP_Transform') {
+  //       console.log('matrix y up replaced');
   //       node.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];  
   //     }      
   //   });
@@ -275,9 +283,13 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   var scaleX = parseFloat(argv.scaleX);
   var scaleY = parseFloat(argv.scaleY);
   var scaleZ = parseFloat(argv.scaleZ);
+  var yaw = parseFloat(argv.yaw);
+  var pitch = parseFloat(argv.pitch);
+  var roll = parseFloat(argv.roll);
 
   if (rotMat || scaleX || scaleY || scaleZ) {
     if (scene.meshes) {
+      var accessorEdited = {};
       Object.keys(scene.meshes).forEach(function(meshName) {
         var mesh = scene.meshes[meshName];
         console.log(meshName);
@@ -285,7 +297,9 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
           for (let i = 0; i < mesh.primitives.length; ++i) {            
             var obj = mesh.primitives[i];
             var an = obj.attributes.POSITION;
-            if (an) {
+            if (an && !(an in accessorEdited)) {
+              accessorEdited[an] = true;
+
               var a = scene.accessors[an];
               var bv = scene.bufferViews[a.bufferView];
 
@@ -304,6 +318,42 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
                   f32[j + 2] *= scaleZ;
                 }
 
+                if (yaw) {
+                  var x = f32[j];
+                  var y = f32[j + 1];                  
+
+                  var a = cesium.toRadians(yaw);
+                  var cosa = Math.cos(a);
+                  var sina = Math.sin(a);
+
+                  f32[j]      = cosa * x + -sina * y;
+                  f32[j + 1]  = sina * x + cosa * y;                  
+                }
+
+                if (pitch) {
+                  var x = f32[j];                  
+                  var z = f32[j + 2];
+
+                  var a = cesium.toRadians(pitch);
+                  var cosa = Math.cos(a);
+                  var sina = Math.sin(a);
+
+                  f32[j]      = cosa * x + -sina * z;
+                  f32[j + 2]  = sina * x + cosa * z;  
+                }
+
+                if (roll) {                  
+                  var y = f32[j + 1];
+                  var z = f32[j + 2];
+
+                  var a = cesium.toRadians(roll);
+                  var cosa = Math.cos(a);
+                  var sina = Math.sin(a);
+
+                  f32[j + 1]  = cosa * y + sina * z;
+                  f32[j + 2]  = -sina * y + cosa * z; 
+                }
+
                 var x = f32[j];
                 var y = f32[j + 1];
                 var z = f32[j + 2];   
@@ -318,7 +368,14 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
                 if (rotMat) {
                   f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
                   f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
-                  f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;                
+                  f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;  
+                  // var sx = x;
+                  // var sy = -z;
+                  // var sz = y;
+
+                  // f32[j]      = rotMat[0] * sx + rotMat[1] * sy + rotMat[2] * sz;
+                  // f32[j + 1]  = rotMat[4] * sx + rotMat[5] * sy + rotMat[6] * sz;
+                  // f32[j + 2]  = rotMat[8] * sx + rotMat[9] * sy + rotMat[10] * sz;                        
                 }                
 
                 x = f32[j];
