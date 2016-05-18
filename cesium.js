@@ -302,3 +302,5 @@ exports.fromCartesian = function(cartesian) {
     return {lon: longitude, lat: latitude, height: height};
     // return {lon: toDegrees(longitude), lat: toDegrees(latitude), height: height};        
 };
+
+exports.toRadians = toRadians;
