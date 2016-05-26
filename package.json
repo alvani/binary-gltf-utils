@@ -9,6 +9,7 @@
 , "dependencies":
   { "bluebird": "^3.1.1"
   , "yargs": "^3.31.0"
+  , "mathjs": "^3.2.1"
   }
 , "bin": { "gltf-to-glb": "./index.js" }
 , "engines" : { "node" : ">=4.0.0" }

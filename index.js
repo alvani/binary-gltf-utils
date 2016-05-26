@@ -5,6 +5,7 @@
 const Promise = require('bluebird');
 const path = require('path');
 const util = require('util');
+const math = require('mathjs');
 const fs = Promise.promisifyAll(require('fs'));
 const cesium = require('./cesium');
 
@@ -28,6 +29,8 @@ const argv = require('yargs')
   .describe('lon', 'longitude for rtc')
   .string('lat')
   .describe('lat', 'latitude for rtc')
+  .string('height')
+  .describe('height', 'height for rtc')
   .string('fs')
   .describe('fs', 'name of external fragment shader')
   .string('vs')
@@ -51,10 +54,16 @@ const argv = require('yargs')
   .alias('h', 'help')
   .argv;
 
-var lon, lat;
+//test
+// var matId = math.matrix([[4, 0, 0], [0, 5, 0], [0, 0, 6]]);
+// var vec = math.matrix([1, 1, 1]);
+// var result = math.multiply(matId, vec);
+// console.log(result);
+
+var lon, lat, height;
 if (argv.rtc) {
-  if (!argv.lon || !argv.lat) {
-    console.error('Pleasep provide [lon] [lat] parameter after --rtc');
+  if (!argv.lon || !argv.lat || !argv.height) {
+    console.error('Pleasep provide [lon] [lat] [height] parameter after --rtc');
     return;
   }
   lon = parseFloat(argv.lon);
@@ -67,6 +76,11 @@ if (argv.rtc) {
     console.error('Pleasep provide valid [lat] value');
     return;
   }  
+  height = parseFloat(argv.height);
+  if (!height) {
+    console.error('Pleasep provide valid [height] value');
+    return;
+  }
 }
 
 if (argv.embed) {
@@ -116,6 +130,64 @@ function addToBody(uri) {
   });
 }
 
+function arrToMatrix(arr) {  
+  return math.matrix([
+    [arr[0],  arr[1],   arr[2],   arr[3]],
+    [arr[4],  arr[5],   arr[6],   arr[7]],
+    [arr[8],  arr[9],   arr[10],  arr[11]],
+    [arr[12], arr[13],  arr[14],  arr[15]]
+  ]);
+}
+
+function applyTransform(node) {  
+  var m = node.worldMatrix ? node.worldMatrix : node.matrix;
+  for (let i = 0; i < node.children.length; ++i) {
+    var c = node.children[i];
+    c.worldMatrix = math.multiply(m, c.matrix);
+    applyTransform(c);
+  }  
+}
+
+var nodes = {};
+function createSceneNode(scene) {  
+  if (scene.nodes) {    
+    // collect nodes
+    nodes = {};
+    var keys = Object.keys(scene.nodes);
+    keys.forEach(function(nodeName) {
+      var sceneNode = scene.nodes[nodeName];
+      nodes[nodeName] = {
+        name: nodeName,   
+        matrix: arrToMatrix(sceneNode.matrix),  
+        children: []
+      }      
+    });
+
+    keys.forEach(function(nodeName) {      
+      var sceneNode = scene.nodes[nodeName];
+      var node = nodes[nodeName];
+      if (sceneNode.children && sceneNode.children.length > 0) {          
+        for (let j = 0; j < sceneNode.children.length; ++j) {
+          var childName = sceneNode.children[j];
+          if (childName in nodes) {
+            node.children.push(nodes[childName]);
+            nodes[childName].parent = node;
+          }
+        }
+      }
+    });     
+
+    keys.forEach(function(nodeName) {
+      var node = nodes[nodeName];
+      if (!node.parent) {
+        applyTransform(node);        
+      }
+    });    
+
+    console.log(nodes);
+  }
+}
+
 fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   // Modify the GLTF data to reference the buffer in the body instead of external references.
   const scene = JSON.parse(gltf);  
@@ -127,7 +199,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   if (argv.rtc) {
     scene.extensionsUsed.push('CESIUM_RTC');
 
-    var wpos = cesium.fromDegrees(lon, lat, 0.0);
+    var wpos = cesium.fromDegrees(lon, lat, height);
     worldPos = wpos;
 
     var pos = {
@@ -274,6 +346,8 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
       }); 
     }
   }
+
+  var sn = createSceneNode(scene);
 
   // manipulate vertex
   var maxX, maxY, maxZ, maxHeight;
