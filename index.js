@@ -119,7 +119,10 @@ function addToBody(uri) {
     if (!base64Regexp.test(uri)) throw new Error('unsupported data URI');
     promise = Promise.resolve(new Buffer(uri.replace(base64Regexp, ''), 'base64'));
   }
-  else promise = fs.readFileAsync(path.join(containingFolder, uri));
+  else {
+    var duri = decodeURI(uri);    
+    promise = fs.readFileAsync(path.join(containingFolder, duri));
+  }
 
   return promise.then(function (contents) {
     const offset = bodyLength;
@@ -199,6 +202,8 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
   if (argv.rtc) {
     scene.extensionsUsed.push('CESIUM_RTC');
 
+    height = 0;
+    console.log('lon', lon, 'lat', lat, 'height', height);
     var wpos = cesium.fromDegrees(lon, lat, height);
     worldPos = wpos;
 
@@ -317,18 +322,88 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
         }
       };
   }
-  else scene.buffers = undefined;   
+  else scene.buffers = undefined;     
 
   // replace matrix
-  // if (scene.nodes) {
-  //   Object.keys(scene.nodes).forEach(function(nodeName) {
-  //     var node = scene.nodes[nodeName];
-  //     if (node.name == 'Y_UP_Transform') {
-  //       console.log('matrix y up replaced');
-  //       node.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];  
-  //     }      
-  //   });
-  // }
+  var blendRot;
+  if (scene.nodes) {
+    var meshes;    
+    Object.keys(scene.nodes).forEach(function(nodeName) {
+      var node = scene.nodes[nodeName];
+
+      if (node.name != 'Y_UP_Transform') {        
+        blendRot = node.matrix;
+        node.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];  
+      } 
+
+      // if (node.name == 'Y_UP_Transform') {
+      //   console.log('matrix y up replaced');
+      //   node.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];  
+      // }      
+      // node.matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; 
+
+      // if (node.meshes) {
+      //   meshes = node.meshes;
+      //   delete node['meshes'];
+      //   node.children = ['b3dm'];
+      // }       
+    });
+
+    var uniMat = [1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1];
+    // var uniMat = [1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1];    
+    // var uniMat = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+
+    //create b3dm node
+    var m = rotMat.slice();
+    //clear translation
+    // m[3] = m[7] = m[11] = 0;
+
+    m[0] = rotMat[0];
+    m[1] = rotMat[4];
+    m[2] = rotMat[8];
+    m[3] = rotMat[12];
+    m[4] = rotMat[1];
+    m[5] = rotMat[5];
+    m[6] = rotMat[9];
+    m[7] = rotMat[13];
+    m[8] = rotMat[2];
+    m[9] = rotMat[6];
+    m[10] = rotMat[10];
+    m[11] = rotMat[14];
+    m[12] = 0;
+    m[13] = 0;
+    m[14] = 0;
+    m[15] = rotMat[15];
+
+    // scene.nodes['b3dm'] = {
+    //   children: [],
+    //   matrix: m,
+    //   meshes: meshes,
+    //   name: 'b3dm'
+    // };
+
+    // scene.nodes['b3dm'] = {
+    //   children: ['node_1'],
+    //   matrix: m,      
+    //   name: 'b3dm'
+    // };
+
+    // scene.nodes['b3dm'] = {
+    //   children: ['uni'],
+    //   matrix: m,      
+    //   name: 'b3dm'
+    // };
+
+    // scene.nodes['uni'] = {
+    //   children: [],
+    //   matrix: uniMat,
+    //   meshes: meshes,
+    //   name: 'uni'
+    // };
+    
+    // scene.scenes.defaultScene.nodes = ['b3dm'];    
+  }
 
   //replace shader
   if (argv.vs || argv.fs) {
@@ -381,7 +456,21 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
               const contents = bodyParts[1];
               var f32 = new Float32Array(contents.buffer, contents.byteOffset + offset, a.byteStride * a.count / Float32Array.BYTES_PER_ELEMENT);
 
-              for (let j = 0; j < f32.length; j+=3) {                
+              for (let j = 0; j < f32.length; j+=3) { 
+                var x = f32[j];
+                var y = f32[j + 1];
+                var z = f32[j + 2];
+                
+                if (blendRot) {
+                  x = f32[j];
+                  y = f32[j + 1];
+                  z = f32[j + 2];
+
+                  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
+                  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
+                  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+                }
+
                 if (scaleX) {
                   f32[j] *= scaleX;
                 }
@@ -404,42 +493,42 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
                   f32[j + 1]  = sina * x + cosa * y;                  
                 }
 
-                if (pitch) {
-                  var x = f32[j];                  
-                  var z = f32[j + 2];
+                // if (pitch) {
+                //   var x = f32[j];                  
+                //   var z = f32[j + 2];
 
-                  var a = cesium.toRadians(pitch);
-                  var cosa = Math.cos(a);
-                  var sina = Math.sin(a);
+                //   var a = cesium.toRadians(pitch);
+                //   var cosa = Math.cos(a);
+                //   var sina = Math.sin(a);
 
-                  f32[j]      = cosa * x + -sina * z;
-                  f32[j + 2]  = sina * x + cosa * z;  
-                }
+                //   f32[j]      = cosa * x + -sina * z;
+                //   f32[j + 2]  = sina * x + cosa * z;  
+                // }
 
-                if (roll) {                  
-                  var y = f32[j + 1];
-                  var z = f32[j + 2];
+                // if (roll) {                  
+                //   var y = f32[j + 1];
+                //   var z = f32[j + 2];
 
-                  var a = cesium.toRadians(roll);
-                  var cosa = Math.cos(a);
-                  var sina = Math.sin(a);
+                //   var a = cesium.toRadians(roll);
+                //   var cosa = Math.cos(a);
+                //   var sina = Math.sin(a);
 
-                  f32[j + 1]  = cosa * y + sina * z;
-                  f32[j + 2]  = -sina * y + cosa * z; 
-                }
-
-                var x = f32[j];
-                var y = f32[j + 1];
-                var z = f32[j + 2];   
+                //   f32[j + 1]  = cosa * y + sina * z;
+                //   f32[j + 2]  = -sina * y + cosa * z; 
+                // }                   
 
                 if (z > maxHeight) {
                   maxHeight = z;
                 }                                 
                 if (z < minHeight) {
                   minHeight = z;
-                }
+                }                                
 
                 if (rotMat) {
+                  x = f32[j];
+                  y = f32[j + 1];
+                  z = f32[j + 2];
+
                   f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
                   f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
                   f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;  
