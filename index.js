@@ -489,6 +489,16 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		return m;
 	}
 
+	function createScaleMatrix(x, y, z) {
+		var arr = [
+			x, 0, 0, 0,
+			0, y, 0, 0,
+			0, 0, z, 0,
+			0, 0, 0, 1
+		];
+		return arrToMatrix(arr);
+	}
+
 	function testBlendRot() {
 		var m = arrGLTFToMatrix(blendRot);
 		var vec = math.matrix([1, 1, 1, 1]);
@@ -507,12 +517,27 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		// console.log(x, y, z, w);
 	}
 
-	var v = math.matrix([1, 1, 1, 1]);
-	var rm = createRotationMatrix(0, -90, 0);  
-	console.log(rm);
+	function testMatrix() {
+		// var v = math.matrix([1, 1, 1, 1]);
+		// var rm = createRotationMatrix(0, -90, 0);  
+		// console.log(rm);
 
-	testBlendRot();
-	// console.log(math.multiply(rm, v));
+		// testBlendRot();
+		// console.log(math.multiply(rm, v));
+
+		var v = math.matrix([1, 0, 0, 1]);
+		var rm = createRotationMatrix(0, 0, 90);
+		var sm = createScaleMatrix(1, 1, 2);
+		var tm = math.multiply(rm, sm);
+
+		var result = math.multiply(tm, v);
+
+
+
+		console.log(result);
+	}	
+
+	testMatrix();
 
 	if (rotMat || scaleX || scaleY || scaleZ) {
 		if (scene.meshes) {
