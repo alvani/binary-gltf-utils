@@ -48,6 +48,21 @@ function testCreateRotationMatrix() {
 	r = math.multiply(m, v);
 	v2 = math.matrix([-1, 1, 1, 1]);	
 	pass = pass && subTest('roll 90', vectorEqual(r, v2, EPSILON));
+
+	m = test.createRotationMatrix(90, 0, 0, true);
+	r = math.multiply(m, v);
+	v2 = math.matrix([1, -1, 1, 1]);	
+	pass = pass && subTest('yaw 90 cw', vectorEqual(r, v2, EPSILON));
+
+	m = test.createRotationMatrix(0, 90, 0, true);
+	r = math.multiply(m, v);
+	v2 = math.matrix([1, 1, -1, 1]);	
+	pass = pass && subTest('pitch 90 cw', vectorEqual(r, v2, EPSILON));
+
+	m = test.createRotationMatrix(0, 0, 90, true);
+	r = math.multiply(m, v);
+	v2 = math.matrix([1, 1, -1, 1]);	
+	pass = pass && subTest('roll 90 cw', vectorEqual(r, v2, EPSILON));
 	
 	return pass;
 }

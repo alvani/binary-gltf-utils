@@ -6,10 +6,12 @@ function toRadians(degree) {
 	return degree * math.pi / 180.0;
 }
 
-exports.createRotationMatrix = function(yaw, pitch, roll) {
+// (yaw, pitch, roll) = (z axis, x axis, y axis)
+exports.createRotationMatrix = function(yaw, pitch, roll, cw) {
+	var mul = cw ? -1 : 1;
 	var a = toRadians(yaw);
 	var cosa = Math.cos(a);
-	var sina = Math.sin(a);
+	var sina = Math.sin(a) * mul;	
 
 	// ccw on z-axis
 	var myaw = [
@@ -22,7 +24,7 @@ exports.createRotationMatrix = function(yaw, pitch, roll) {
 	
 	a = toRadians(pitch);
 	cosa = Math.cos(a);
-	sina = Math.sin(a);
+	sina = Math.sin(a) * mul;
 
 	// ccw on x-axis
 	var mpitch = [
@@ -36,7 +38,7 @@ exports.createRotationMatrix = function(yaw, pitch, roll) {
 
 	a = toRadians(roll);
 	cosa = Math.cos(a);
-	sina = Math.sin(a);
+	sina = Math.sin(a) * mul;
 
 	// ccw on y-axis
 	var mroll = [
