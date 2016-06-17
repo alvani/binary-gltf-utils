@@ -8,6 +8,7 @@ const util = require('util');
 const math = require('mathjs');
 const fs = Promise.promisifyAll(require('fs'));
 const cesium = require('./cesium');
+const matrix = require('./matrix');
 
 const embedArr = [ 'textures', 'shaders' ];
 const embed = {};
@@ -133,22 +134,8 @@ function addToBody(uri) {
 	});
 }
 
-function arrToMatrix(arr) {  
-	return math.matrix([
-		[arr[0],  arr[1],   arr[2],   arr[3]],
-		[arr[4],  arr[5],   arr[6],   arr[7]],
-		[arr[8],  arr[9],   arr[10],  arr[11]],
-		[arr[12], arr[13],  arr[14],  arr[15]]
-	]);
-}
-
 function arrGLTFToMatrix(arr) {  
-	return math.matrix([
-		[arr[0], arr[4], arr[8],  arr[12]],
-		[arr[1], arr[5], arr[9],  arr[13]],
-		[arr[2], arr[6], arr[10], arr[14]],
-		[arr[3], arr[7], arr[11], arr[15]]
-	]);
+	return matrix.arrToMatrix(arr, true);
 }
 
 function applyTransform(node) {  
@@ -170,7 +157,7 @@ function createSceneNode(scene) {
 			var sceneNode = scene.nodes[nodeName];
 			nodes[nodeName] = {
 				name: nodeName,   
-				matrix: arrToMatrix(sceneNode.matrix),  
+				matrix: matrix.arrToMatrix(sceneNode.matrix),  
 				children: []
 			}      
 		});
@@ -444,60 +431,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 	var yaw = parseFloat(argv.yaw);
 	var pitch = parseFloat(argv.pitch);
 	var roll = parseFloat(argv.roll);  
-
-	function createRotationMatrix(yaw, pitch, roll) {
-		var a = cesium.toRadians(yaw);
-		var cosa = Math.cos(a);
-		var sina = Math.sin(a);
-
-		// ccw on z-axis
-		var myaw = [
-			cosa, -sina, 0, 0,
-			sina, cosa, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1
-		];
-		var m = arrToMatrix(myaw);					 
 		
-		a = cesium.toRadians(pitch);
-		cosa = Math.cos(a);
-		sina = Math.sin(a);
-
-		// ccw on x-axis
-		var mpitch = [
-			1, 0, 0, 0,
-			0, cosa, -sina, 0,
-			0, sina, cosa, 0,
-			0, 0, 0, 1
-		];
-		var m2 = arrToMatrix(mpitch);
-		m = math.multiply(m2, m);
-
-		a = cesium.toRadians(roll);
-		cosa = Math.cos(a);
-		sina = Math.sin(a);
-
-		// ccw on y-axis
-		var mroll = [
-			cosa, 0, -sina, 0,
-			0, 1, 0, 0,
-			sina, 0, cosa, 0,
-			0, 0, 0, 1
-		];
-		m2 = arrToMatrix(mroll);
-		m = math.multiply(m2, m);
-		return m;
-	}
-
-	function createScaleMatrix(x, y, z) {
-		var arr = [
-			x, 0, 0, 0,
-			0, y, 0, 0,
-			0, 0, z, 0,
-			0, 0, 0, 1
-		];
-		return arrToMatrix(arr);
-	}
 
 	function testBlendRot() {
 		var m = arrGLTFToMatrix(blendRot);
@@ -525,16 +459,23 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		// testBlendRot();
 		// console.log(math.multiply(rm, v));
 
-		var v = math.matrix([1, 0, 0, 1]);
-		var rm = createRotationMatrix(0, 0, 90);
-		var sm = createScaleMatrix(1, 1, 2);
-		var tm = math.multiply(rm, sm);
+		// var v = math.matrix([1, 0, 0, 1]);
+		// var rm = createRotationMatrix(0, 0, 90);
+		// var sm = createScaleMatrix(1, 1, 2);
+		// var tm = math.multiply(rm, sm);
 
-		var result = math.multiply(tm, v);
+		// var result = math.multiply(tm, v);
 
+		var uniMat = matrix.createRotationMatrix(0, -90, 0);
+		var blendMat = arrGLTFToMatrix(blendRot);
+		var tm = math.multiply(uniMat, blendMat);	
+		var tmTrans = math.transpose(tm);
 
+		console.log(yaw, pitch, roll);
+		var posMat = matrix.createUnityRotationMatrix(yaw, pitch, roll);		
+		tm = math.multiply(posMat, tmTrans);
 
-		console.log(result);
+		console.log(tm);
 	}	
 
 	testMatrix();
@@ -564,15 +505,15 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								var y = f32[j + 1];
 								var z = f32[j + 2];
 								
-								// if (blendRot) {
-								//   x = f32[j];
-								//   y = f32[j + 1];
-								//   z = f32[j + 2];
+								if (blendRot) {
+								  x = f32[j];
+								  y = f32[j + 1];
+								  z = f32[j + 2];
 
-								//   f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
-								//   f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
-								//   f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
-								// }
+								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
+								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
+								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+								}
 
 								if (scaleX) {
 									f32[j] *= scaleX;
@@ -584,41 +525,41 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 									f32[j + 2] *= scaleZ;
 								}
 
-								if (yaw) {
-									var x = f32[j];
-									var y = f32[j + 1];                  
+								// if (yaw) {
+								// 	var x = f32[j];
+								// 	var y = f32[j + 1];                  
 
-									var a = cesium.toRadians(yaw);
-									var cosa = Math.cos(a);
-									var sina = Math.sin(a);
+								// 	var a = cesium.toRadians(yaw);
+								// 	var cosa = Math.cos(a);
+								// 	var sina = Math.sin(a);
 
-									f32[j]      = cosa * x + -sina * y;
-									f32[j + 1]  = sina * x + cosa * y;                  
-								}
+								// 	f32[j]      = cosa * x + -sina * y;
+								// 	f32[j + 1]  = sina * x + cosa * y;                  
+								// }
 
-								if (pitch) {
-									var x = f32[j];                  
-									var z = f32[j + 2];
+								// if (pitch) {
+								// 	var x = f32[j];                  
+								// 	var z = f32[j + 2];
 
-									var a = cesium.toRadians(pitch);
-									var cosa = Math.cos(a);
-									var sina = Math.sin(a);
+								// 	var a = cesium.toRadians(pitch);
+								// 	var cosa = Math.cos(a);
+								// 	var sina = Math.sin(a);
 
-									f32[j]      = cosa * x + -sina * z;
-									f32[j + 2]  = sina * x + cosa * z;  
-								}
+								// 	f32[j]      = cosa * x + -sina * z;
+								// 	f32[j + 2]  = sina * x + cosa * z;  
+								// }
 
-								if (roll) {                  
-									var y = f32[j + 1];
-									var z = f32[j + 2];
+								// if (roll) {                  
+								// 	var y = f32[j + 1];
+								// 	var z = f32[j + 2];
 
-									var a = cesium.toRadians(roll);
-									var cosa = Math.cos(a);
-									var sina = Math.sin(a);
+								// 	var a = cesium.toRadians(roll);
+								// 	var cosa = Math.cos(a);
+								// 	var sina = Math.sin(a);
 
-									f32[j + 1]  = cosa * y + sina * z;
-									f32[j + 2]  = -sina * y + cosa * z; 
-								}                   
+								// 	f32[j + 1]  = cosa * y + sina * z;
+								// 	f32[j + 2]  = -sina * y + cosa * z; 
+								// }                   
 
 								if (z > maxHeight) {
 									maxHeight = z;
