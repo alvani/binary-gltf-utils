@@ -15,6 +15,21 @@ function matrixEqual(m1, m2) {
 	return pass;
 }
 
+function testScaleMatrix() {
+	var m1 = test.createScaleMatrix(1, 2, 3);
+	var m2 = math.matrix([
+		[1, 0, 0, 0],
+		[0, 2, 0, 0],
+		[0, 0, 3, 0],
+		[0, 0, 0, 1]
+	]);
+	if (!matrixEqual(m1, m2)) {
+		return false;
+	}		
+
+	return true;
+}
+
 function testArrToMatrix() {
 	var arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];	
 	var m = math.matrix([
@@ -57,6 +72,7 @@ function doTest(func) {
 
 exports.test = function (argument) {
 	var funcs = [
+		testScaleMatrix,
 		testArrToMatrix,
 		testArrToMatrixColumn
 	];
