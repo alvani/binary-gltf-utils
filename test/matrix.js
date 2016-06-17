@@ -3,10 +3,12 @@
 const test = require('../matrix');
 const math = require('mathjs');
 
+const EPSILON = 0.00000000000001;
+
 function matrixEqual(m1, m2) {
 	var pass = true;
 	m1.forEach(function (value, index, matrix) {		
-		var value2 = m2.subset(math.index(index[0], index[1]));
+		var value2 = m2.subset(math.index(index[0], index[1]));		
 		if (value != value2) {
 			pass = false;
 			return false;
@@ -15,7 +17,42 @@ function matrixEqual(m1, m2) {
 	return pass;
 }
 
-function testScaleMatrix() {
+function vectorEqual(v1, v2, eps) {
+	var pass = true;
+	v1.forEach(function (value, index, matrix) {		
+		var value2 = v2.subset(math.index(index[0]));
+		var d = Math.abs(value2 - value);		
+		if (d > eps) {
+			pass = false;
+			return false;
+		}
+	});
+	return pass;
+}
+
+function testCreateRotationMatrix() {
+	var pass = true;
+	var v = math.matrix([1, 1, 1, 1]);
+	var m = test.createRotationMatrix(90, 0, 0);
+	var r = math.multiply(m, v);
+
+	var v2 = math.matrix([-1, 1, 1, 1]);	
+	pass = pass && subTest('yaw 90', vectorEqual(r, v2, EPSILON));
+
+	m = test.createRotationMatrix(0, 90, 0);
+	r = math.multiply(m, v);
+	v2 = math.matrix([1, -1, 1, 1]);	
+	pass = pass && subTest('pitch 90', vectorEqual(r, v2, EPSILON));
+
+	m = test.createRotationMatrix(0, 0, 90);
+	r = math.multiply(m, v);
+	v2 = math.matrix([-1, 1, 1, 1]);	
+	pass = pass && subTest('roll 90', vectorEqual(r, v2, EPSILON));
+	
+	return pass;
+}
+
+function testCreateScaleMatrix() {
 	var m1 = test.createScaleMatrix(1, 2, 3);
 	var m2 = math.matrix([
 		[1, 0, 0, 0],
@@ -70,9 +107,15 @@ function doTest(func) {
 	console.log(result ? 'passed' : 'failed');
 }
 
+function subTest(name, result) {
+	console.log('  subtest', name, result ? 'passed' : 'failed');
+	return result;
+}
+
 exports.test = function (argument) {
 	var funcs = [
-		testScaleMatrix,
+		testCreateRotationMatrix,
+		testCreateScaleMatrix,
 		testArrToMatrix,
 		testArrToMatrixColumn
 	];
