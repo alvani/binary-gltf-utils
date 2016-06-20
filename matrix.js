@@ -53,7 +53,7 @@ exports.createRotationMatrix = function(yaw, pitch, roll, cw) {
 };
 
 exports.createUnityRotationMatrix = function(yaw, pitch, roll) {
-	return this.createRotationMatrix(roll, pitch, yaw);
+	return this.createRotationMatrix(roll, pitch, yaw, true);
 };
 
 exports.createScaleMatrix = function(x, y, z) {
