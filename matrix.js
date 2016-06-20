@@ -1,3 +1,6 @@
+// Matrix utility functions
+// all matrices are assumed row major
+
 'use strict';
 
 const math = require('mathjs');
@@ -56,6 +59,21 @@ exports.createUnityRotationMatrix = function(yaw, pitch, roll) {
 	return this.createRotationMatrix(roll, pitch, yaw, true);
 };
 
+// blendMat: row major blender rotation matrix
+exports.createUnityLocalRotationMatrix = function(blendMat, yaw, pitch, roll) {
+	// .pos trans = local trans * unity trans * blender trans on unity coord clock wise rot
+	// we need to extract local trans from .pos trans
+	// .pos trans = local trans * (unity trans * blender);
+	// .pos trans * inv(unity trans * blender) = local trans
+
+	var uniMat = this.createRotationMatrix(0, -90, 0, true); // unity will transform -90 cw x axis from blender file	
+	var tm = math.multiply(uniMat, blendMat);
+	var tmTrans = math.transpose(tm);	
+	var posMat = this.createUnityRotationMatrix(yaw, pitch, roll);
+	var localMat = math.multiply(posMat, tmTrans);
+	return localMat;
+};
+
 exports.createScaleMatrix = function(x, y, z) {
 	var arr = [
 		x, 0, 0, 0,
@@ -82,4 +100,15 @@ exports.arrToMatrix = function(arr, column) {
 			[arr[12], arr[13],  arr[14],  arr[15]]
 		]);
 	}
+};
+
+exports.multiplyVectorArr = function(mat, arr) {
+	var v = math.matrix(arr);
+	var res = math.multiply(mat, v);
+	return [
+		res.subset(math.index(0)),
+		res.subset(math.index(1)),
+		res.subset(math.index(2)),
+		res.subset(math.index(3))
+	];
 };
