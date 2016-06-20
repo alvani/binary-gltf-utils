@@ -5,11 +5,13 @@ const math = require('mathjs');
 
 const EPSILON = 0.00000000000001;
 
-function matrixEqual(m1, m2) {
+function matrixEqual(m1, m2, eps) {
 	var pass = true;
 	m1.forEach(function (value, index, matrix) {		
-		var value2 = m2.subset(math.index(index[0], index[1]));		
-		if (value != value2) {
+		var value2 = m2.subset(math.index(index[0], index[1]));
+		var d = Math.abs(value2 - value);		
+		var e = eps | 0;
+		if (d > eps) {
 			pass = false;
 			return false;
 		}
@@ -116,6 +118,40 @@ function testArrToMatrixColumn() {
 	return true;
 }
 
+function testGetLocalTransformFromDotPos() {
+	var pass = true;
+
+	// .pos trans = local trans * unity trans * blender trans on unity coord clock wise rot
+	// we need to extract local trans from .pos trans
+	// .pos trans = local trans * (unity trans * blender);
+	// .pos trans * inv(unity trans * blender) = local trans
+
+	var yaw = 180;
+	var pitch = 0;
+	var roll = 180;
+
+	var uniMat = test.createRotationMatrix(0, -90, 0, true); // unity will transform -90 cw x axis from blender file
+	var blendMat = test.createRotationMatrix(0, -90, 0, true); // simulated blender transfom, arbitrary values
+	var tm = math.multiply(uniMat, blendMat);	
+	var tmTrans = math.transpose(tm);	// = inv(unity trans * blender) = transponse(unity trans * blender)
+
+	// m = transform.localToWorldMatrix value on Unity 
+	// obtained from blender mesh with -90 x axis rotation internal .blend transform
+	// (actually blender has ccw rotation but unity import is not converting the values)
+	var m = math.matrix([
+		[1, 0, 0, 0],
+		[0, -1, 0, 0],
+		[0, 0, -1, 0],
+		[0, 0, 0, 1],
+	]);	
+
+	pass = pass && subTest('matrix -90 x axis test', matrixEqual(tmTrans, m, EPSILON));
+
+
+	return pass;
+
+}
+
 function doTest(func) {
 	console.log('running', func.name, '...');
 	var result = func();
@@ -132,7 +168,8 @@ exports.test = function (argument) {
 		testCreateRotationMatrix,
 		testCreateScaleMatrix,
 		testArrToMatrix,
-		testArrToMatrixColumn
+		testArrToMatrixColumn,
+		testGetLocalTransformFromDotPos
 	];
 
 	funcs.forEach(function(value) {
