@@ -118,17 +118,47 @@ function testArrToMatrixColumn() {
 	return true;
 }
 
+function testCreateUnityRotationMatrix() {
+	var pass = true;
+	var yaw = 180;
+	var pitch = 0;
+	var roll = 180;
+
+	var uniMat = test.createUnityRotationMatrix(yaw, pitch, roll);
+
+	// these values are obtained from unity
+	var arr = [
+		1, 0, 0, 0,
+		0, -1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1,
+	];
+	var m = test.arrToMatrix(arr, true); // unity matrix is column major
+
+	pass = pass && subTest('yaw=180 pitch=0 roll=180', matrixEqual(uniMat, m, EPSILON));
+
+	yaw = 0, pitch = -90, roll = 0;
+	arr = [
+		1, 0, 0, 0,
+		0, 0, 1, 0,
+		0, -1, 0, 0,
+		0, 0, 0, 1
+	];
+	m = test.arrToMatrix(arr, true);
+	uniMat = test.createUnityRotationMatrix(yaw, pitch, roll);
+
+	pass = pass && subTest('yaw=0 pitch=-90 roll=0', matrixEqual(uniMat, m, EPSILON));
+
+	return pass;
+}
+
 function testGetLocalTransformFromDotPos() {
 	var pass = true;
 
 	// .pos trans = local trans * unity trans * blender trans on unity coord clock wise rot
 	// we need to extract local trans from .pos trans
 	// .pos trans = local trans * (unity trans * blender);
-	// .pos trans * inv(unity trans * blender) = local trans
-
-	var yaw = 180;
-	var pitch = 0;
-	var roll = 180;
+	// .pos trans * inv(unity trans * blender) = local trans	
 
 	var uniMat = test.createRotationMatrix(0, -90, 0, true); // unity will transform -90 cw x axis from blender file
 	var blendMat = test.createRotationMatrix(0, -90, 0, true); // simulated blender transfom, arbitrary values
@@ -137,16 +167,17 @@ function testGetLocalTransformFromDotPos() {
 
 	// m = transform.localToWorldMatrix value on Unity 
 	// obtained from blender mesh with -90 x axis rotation internal .blend transform
-	// (actually blender has ccw rotation but unity import is not converting the values)
-	var m = math.matrix([
-		[1, 0, 0, 0],
-		[0, -1, 0, 0],
-		[0, 0, -1, 0],
-		[0, 0, 0, 1],
-	]);	
+	// (actually blender has ccw rotation but unity import is not converting the values,
+	//  something to do with row/col matrix and coordinate system used)
+	var arr = [
+		1, 0, 0, 0,
+		0, -1, 0, 0,
+		0, 0, -1, 0,
+		0, 0, 0, 1,
+	];
+	var m = test.arrToMatrix(arr, true); // unity matrix is column major
 
 	pass = pass && subTest('matrix -90 x axis test', matrixEqual(tmTrans, m, EPSILON));
-
 
 	return pass;
 
@@ -169,6 +200,7 @@ exports.test = function (argument) {
 		testCreateScaleMatrix,
 		testArrToMatrix,
 		testArrToMatrixColumn,
+		testCreateUnityRotationMatrix,
 		testGetLocalTransformFromDotPos
 	];
 
