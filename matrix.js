@@ -37,7 +37,7 @@ exports.createRotationMatrix = function(yaw, pitch, roll, cw) {
 		0, 0, 0, 1
 	];
 	var m2 = this.arrToMatrix(mpitch);
-	m = math.multiply(m2, m);
+	m = math.multiply(m, m2);
 
 	a = toRadians(roll);
 	cosa = Math.cos(a);
@@ -51,7 +51,7 @@ exports.createRotationMatrix = function(yaw, pitch, roll, cw) {
 		0, 0, 0, 1
 	];
 	m2 = this.arrToMatrix(mroll);
-	m = math.multiply(m2, m);
+	m = math.multiply(m, m2);
 	return m;
 };
 
