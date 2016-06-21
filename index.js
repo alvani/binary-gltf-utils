@@ -478,10 +478,26 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		console.log(tm);
 	}	
 
-	testMatrix();
+	// testMatrix();
 
 	if (rotMat || scaleX || scaleY || scaleZ) {
-		if (scene.meshes) {
+		if (scene.meshes) {			
+			var localMat;
+			if (blendRot && (yaw || pitch || roll)) {
+				yaw = yaw | 0;
+				pitch = pitch | 0;
+				roll = roll | 0;				
+				
+				// blendRot is ccw, column
+				// blendMat is cw, row  
+				var blendMat = matrix.arrToMatrix(blendRot); // implicitly inversed
+				localMat = matrix.createUnityLocalRotationMatrix(blendMat, yaw, pitch, roll);
+
+				// should it be rotated 180 to match cesium coord ??
+				var adjMat = matrix.createUnityRotationMatrix(0, 0, 180);
+				localMat = math.multiply(adjMat, localMat);
+			}
+
 			var accessorEdited = {};
 			Object.keys(scene.meshes).forEach(function(meshName) {
 				var mesh = scene.meshes[meshName];
@@ -513,6 +529,14 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
 								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
 								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+								}
+
+								if (localMat) {
+									var arr = [f32[j], f32[j + 1], f32[j + 2], 1];
+									arr = matrix.multiplyVectorArr(localMat, arr);
+									f32[j] = arr[0]; 
+									f32[j + 1] = arr[1]; 
+									f32[j + 2] = arr[2]; 
 								}
 
 								if (scaleX) {
