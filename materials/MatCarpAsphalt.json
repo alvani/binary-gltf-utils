@@ -1,0 +1,26 @@
+{
+	"images": {
+        "Asphalt03_png": {
+            "name": "Asphalt03_png",
+            "uri": "Asphalt03.png"
+        }
+    },
+	"textures": {
+        "texture_Asphalt03_png": {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": "sampler_1",
+            "source": "Asphalt03_png",
+            "target": 3553,
+            "type": 5121
+        }
+    },
+	"materials": {
+        "CARP_ASPHALT-effect": {            
+            "technique": "Carpet1Tech",
+            "values": {                
+                "detail": "texture_Asphalt03_png"
+            }
+        }        
+    }
+}

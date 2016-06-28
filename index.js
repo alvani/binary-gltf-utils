@@ -9,6 +9,7 @@ const math = require('mathjs');
 const fs = Promise.promisifyAll(require('fs'));
 const cesium = require('./cesium');
 const matrix = require('./matrix');
+const injectNodes = require('./injectNodes').injectNodes;
 
 const embedArr = [ 'textures', 'shaders' ];
 const embed = {};
@@ -189,7 +190,9 @@ function createSceneNode(scene) {
 
 fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 	// Modify the GLTF data to reference the buffer in the body instead of external references.
-	const scene = JSON.parse(gltf);  
+	const scene = JSON.parse(gltf);
+	injectNodes(scene);  
+	console.log(scene);
 
 	// Let a GLTF parser know that it is using the Binary GLTF extension.
 	if (Array.isArray(scene.extensionsUsed)) scene.extensionsUsed.push('KHR_binary_glTF');

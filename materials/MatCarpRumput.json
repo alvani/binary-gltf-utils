@@ -1,0 +1,26 @@
+{
+    "images": {        
+        "Rumput03_png": {
+            "name": "Rumput03_png",
+            "uri": "Rumput03.png"
+        }
+    },
+    "textures": {        
+        "texture_Rumput03_png": {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": "sampler_1",
+            "source": "Rumput03_png",
+            "target": 3553,
+            "type": 5121
+        }
+    },
+    "materials": {        
+        "CARP_RUMPUT-effect": {            
+            "technique": "Carpet1Tech",
+            "values": {
+                "detail": "texture_Rumput03_png"
+            }
+        }
+    }
+}

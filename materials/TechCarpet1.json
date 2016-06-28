@@ -1,0 +1,113 @@
+{	
+	"shaders": {
+        "CARPET1FS": {
+            "type": 35632,
+            "uri": "CARPET1FS.glsl"
+        },
+        "CARPET1VS": {
+            "type": 35633,
+            "uri": "CARPET1VS.glsl"
+        }
+    },
+	"programs": {
+		"Carpet1Program": {
+			"attributes": [
+                "a_normal",
+                "a_position",
+                "a_texcoord0",
+                "a_texcoord1"
+            ],
+            "fragmentShader": "CARPET1FS",
+            "vertexShader": "CARPET1VS"
+		}
+	},
+	"techniques": {
+		"Carpet1Tech": {
+		    "attributes": {
+		        "a_normal": "normal",
+		        "a_position": "position",
+		        "a_texcoord0": "texcoord0",
+		        "a_texcoord1": "texcoord1"
+		    },
+		    "parameters": {
+		        "ambient": {
+		            "type": 35666
+		        },
+		        "diffuse": {
+		            "type": 35678
+		        },
+		        "detail": {
+		            "type": 35678
+		        },
+		        "emission": {
+		            "type": 35666
+		        },
+		        "modelViewMatrix": {
+		            "semantic": "MODELVIEW",
+		            "type": 35676
+		        },
+		        "normal": {
+		            "semantic": "NORMAL",
+		            "type": 35665
+		        },
+		        "normalMatrix": {
+		            "semantic": "MODELVIEWINVERSETRANSPOSE",
+		            "type": 35675
+		        },
+		        "position": {
+		            "semantic": "POSITION",
+		            "type": 35665
+		        },
+		        "projectionMatrix": {
+		            "semantic": "PROJECTION",
+		            "type": 35676
+		        },
+		        "shininess": {
+		            "type": 5126
+		        },
+		        "specular": {
+		            "type": 35666
+		        },
+		        "texcoord0": {
+		            "semantic": "TEXCOORD_0",
+		            "type": 35664
+		        },
+		        "texcoord1": {
+		            "semantic": "TEXCOORD_1",
+		            "type": 35664
+		        }
+		    },
+		    "program": "Carpet1Program",
+		    "states": {
+		        "enable": [
+		            2929,
+		            3042
+		        ],
+		        "functions": {
+		            "blendEquationSeparate": [
+		                32774,
+		                32774
+		            ],
+		            "blendFuncSeparate": [
+		                1,
+		                771,
+		                1,
+		                771
+		            ],
+		            "depthMask": false
+		        }
+		    },
+		    "uniforms": {
+		        "u_ambient": "ambient",
+		        "u_diffuse": "diffuse",
+		        "u_detail": "detail",
+		        "u_emission": "emission",
+		        "u_modelViewMatrix": "modelViewMatrix",
+		        "u_normalMatrix": "normalMatrix",
+		        "u_projectionMatrix": "projectionMatrix",
+		        "u_shininess": "shininess",
+		        "u_specular": "specular"
+		    }
+		}
+	}
+}
