@@ -32,11 +32,7 @@ const argv = require('yargs')
 	.string('lat')
 	.describe('lat', 'latitude for rtc')
 	.string('height')
-	.describe('height', 'height for rtc')
-	.string('fs')
-	.describe('fs', 'name of external fragment shader')
-	.string('vs')
-	.describe('vs', 'name of external vertex shader')
+	.describe('height', 'height for rtc')	
 	.string('bounds')
 	.describe('bounds', 'filename for .json thath contains bounds')
 	.string('scaleX')
@@ -402,24 +398,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		// };
 		
 		// scene.scenes.defaultScene.nodes = ['b3dm'];    
-	}
-
-	//replace shader
-	if (argv.vs || argv.fs) {
-		if (scene.shaders) {
-			Object.keys(scene.shaders).forEach(function(shaderId) {      
-				var shader = scene.shaders[shaderId];
-				if (shader.type) {
-					if (argv.fs && shader.type === 35632) {
-						shader.uri = argv.fs;
-					}
-					if (argv.vs && shader.type === 35633) {
-						shader.uri = argv.vs;
-					}
-				}
-			}); 
-		}
-	}
+	}	
 
 	var sn = createSceneNode(scene);
 

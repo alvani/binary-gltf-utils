@@ -14,6 +14,9 @@ var injList = {
 	]
 };
 
+const defVShader = 'B3DMVS.glsl';
+const defFShader = 'B3DMFS.glsl';
+
 var objCache = {};
 
 function loadObject(name) {
@@ -42,8 +45,24 @@ function mergeNode(scene, object) {
 	});
 }
 
+function replaceDefaultShaders(scene) {
+	if (scene.shaders) {
+		Object.keys(scene.shaders).forEach(function(shaderId) {      
+			var shader = scene.shaders[shaderId];
+			if (shader.type) {
+				if (shader.type === 35632) {
+					shader.uri = defFShader;
+				}
+				if (shader.type === 35633) {
+					shader.uri = defVShader;
+				}
+			}
+		}); 
+	}
+}
+
 exports.injectNodes = function(scene) {
-	// load node injector	
+	replaceDefaultShaders(scene);
 	
 	var procObjs = {};
 	var keys = Object.keys(scene.materials);
