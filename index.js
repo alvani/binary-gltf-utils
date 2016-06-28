@@ -187,8 +187,8 @@ function createSceneNode(scene) {
 fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 	// Modify the GLTF data to reference the buffer in the body instead of external references.
 	const scene = JSON.parse(gltf);
-	injectNodes(scene);  
-	console.log(scene);
+	injectNodes(scene, path.dirname(filename));	
+	// console.log(JSON.stringify(scene));
 
 	// Let a GLTF parser know that it is using the Binary GLTF extension.
 	if (Array.isArray(scene.extensionsUsed)) scene.extensionsUsed.push('KHR_binary_glTF');

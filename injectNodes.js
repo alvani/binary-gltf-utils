@@ -3,15 +3,25 @@
 const path = require('path');
 const fs = require('fs');
 
-var injList = {
-	'CARP_RUMPUT-effect': [
-		'TechCarpet1',
-		'MatCarpRumput'
-	],	
-	'CARP_ASPHALT-effect': [
-		'TechCarpet1',
-		'MatCarpAsphalt'
-	]
+var objList = {
+	'CARP_RUMPUT-effect': {
+		merge: [
+			'TechCarpet1',
+			'MatCarpRumput'
+		],
+		textures: [
+			'Rumput03.png'
+		]
+	},		
+	'CARP_ASPHALT-effect': {
+		merge: [
+			'TechCarpet1',
+			'MatCarpAsphalt'
+		],
+		textures: [
+			'Asphalt03.png'
+		]
+	}
 };
 
 const defVShader = 'B3DMVS.glsl';
@@ -61,14 +71,14 @@ function replaceDefaultShaders(scene) {
 	}
 }
 
-exports.injectNodes = function(scene) {
+exports.injectNodes = function(scene, outDir) {
 	replaceDefaultShaders(scene);
 	
 	var procObjs = {};
 	var keys = Object.keys(scene.materials);
 	keys.forEach(function(name) {		
-		if (name in injList) {			
-			var arr = injList[name];
+		if (name in objList) {			
+			var arr = objList[name].merge || [];
 			for (let i = 0; i < arr.length; ++i) {
 				var objName = arr[i];
 
@@ -80,6 +90,14 @@ exports.injectNodes = function(scene) {
 					mergeNode(scene, obj);
 					procObjs[objName] = true;
 				}
+			}
+
+			arr = objList[name].textures || [];
+			for (let i = 0; i < arr.length; ++i) {
+				var fn = arr[i];
+				var srcPath = path.join('textures', fn)				
+				var dstPPath = path.join(outDir, fn);
+				fs.linkSync(srcPath, dstPPath);				
 			}
 		}
 
