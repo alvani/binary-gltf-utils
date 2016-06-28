@@ -39,6 +39,9 @@
 		        "detail": {
 		            "type": 35678
 		        },
+		        "lerp": {
+		        	"type": 5126
+		        },
 		        "emission": {
 		            "type": 35666
 		        },
@@ -100,6 +103,7 @@
 		    "uniforms": {
 		        "u_ambient": "ambient",
 		        "u_diffuse": "diffuse",
+		        "u_lerp": "lerp",
 		        "u_detail": "detail",
 		        "u_emission": "emission",
 		        "u_modelViewMatrix": "modelViewMatrix",
