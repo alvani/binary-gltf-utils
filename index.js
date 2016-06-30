@@ -488,6 +488,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 					for (let i = 0; i < mesh.primitives.length; ++i) {            
 						var obj = mesh.primitives[i];
 						var an = obj.attributes.POSITION;
+
 						if (an && !(an in accessorEdited)) {
 							accessorEdited[an] = true;
 
@@ -511,6 +512,15 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
 								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
 								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+								}
+
+								z = f32[j + 2];
+
+								if (z > maxHeight) {
+									maxHeight = z;
+								}                                 
+								if (z < minHeight) {
+									minHeight = z;
 								}
 
 								if (localMat) {
@@ -565,14 +575,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 
 								// 	f32[j + 1]  = cosa * y + sina * z;
 								// 	f32[j + 2]  = -sina * y + cosa * z; 
-								// }                   
-
-								if (z > maxHeight) {
-									maxHeight = z;
-								}                                 
-								if (z < minHeight) {
-									minHeight = z;
-								}                                
+								// }                   								                                
 
 								if (rotMat) {
 									x = f32[j];
@@ -614,6 +617,52 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								if (z < minZ) {
 									minZ = z;
 								}
+							}
+						}
+
+						var an = obj.attributes.NORMAL;
+						if (an && !(an in accessorEdited)) {
+							accessorEdited[an] = true;
+
+							var a = scene.accessors[an];
+							var bv = scene.bufferViews[a.bufferView];
+
+							var offset = bv.byteOffset + a.byteOffset;
+							const contents = bodyParts[1];
+							var f32 = new Float32Array(contents.buffer, contents.byteOffset + offset, a.byteStride * a.count / Float32Array.BYTES_PER_ELEMENT);
+
+							for (let j = 0; j < f32.length; j+=3) { 
+								var x = f32[j];
+								var y = f32[j + 1];
+								var z = f32[j + 2];
+								
+								if (blendRot) {
+								  x = f32[j];
+								  y = f32[j + 1];
+								  z = f32[j + 2];
+
+								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
+								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
+								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+								}
+
+								if (localMat) {
+									var arr = [f32[j], f32[j + 1], f32[j + 2], 1];
+									arr = matrix.multiplyVectorArr(localMat, arr);
+									f32[j] = arr[0]; 
+									f32[j + 1] = arr[1]; 
+									f32[j + 2] = arr[2]; 
+								}             								                                
+
+								if (rotMat) {
+									x = f32[j];
+									y = f32[j + 1];
+									z = f32[j + 2];
+
+									f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
+									f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
+									f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;									
+								} 
 							}
 						}
 					}
