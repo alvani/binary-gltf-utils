@@ -71,9 +71,37 @@ function replaceDefaultShaders(scene) {
 	}
 }
 
+function modifyTechniques(scene) {
+	// add face culling: enable: 2884
+	const stateCull = 2884;
+
+	if (scene.techniques) {
+		Object.keys(scene.techniques).forEach(function(tid) {
+			var t = scene.techniques[tid];
+			if (t.states && t.states.enable) {
+				var en = t.states.enable;
+				var found = false;
+				for (var i = 0; i < en.length; ++i) {
+					if (en[i] == stateCull) {
+						found = true;
+						break;
+					} 
+				}
+				if (!found) {
+					en.push(stateCull);
+					console.log('modded tech', en);
+				}
+			}
+
+		});
+	}	
+
+}
+
 exports.injectNodes = function(scene, outDir) {
 	replaceDefaultShaders(scene);
-	
+	modifyTechniques(scene);
+
 	var procObjs = {};
 	var keys = Object.keys(scene.materials);
 	keys.forEach(function(name) {		
