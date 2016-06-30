@@ -94,12 +94,85 @@ function modifyTechniques(scene) {
 
 		});
 	}	
+}
 
+function modifyDayAndNightMaterial(scene) {
+	var lname;
+	if (scene.images) {
+		var exp = /.*_L_png/;
+		Object.keys(scene.images).forEach(function(id) {
+			var r = exp.exec(id);
+			if (r) {
+				lname = r[0];				
+			}
+		});		
+	}
+
+	if (lname) {
+		var texName = 'texture_' + lname;
+		if (scene.textures && !(scene.textures[texName])) {			
+			scene.textures[texName] = {
+				"format": 6408,
+	            "internalFormat": 6408,
+	            "sampler": "sampler_0",
+	            "source": lname,
+	            "target": 3553,
+	            "type": 5121
+			};			
+		}
+
+		function modifyProgram(pname) {
+			if (scene.programs && pname in scene.programs) {				
+				var p = scene.programs[pname];				
+
+				if (scene.shaders) {
+					if (p.fragmentShader in scene.shaders) {
+						var fs = scene.shaders[p.fragmentShader];	
+						fs.uri = 'EntityFS.glsl';						
+					}
+					if (p.vertexShader in scene.shaders) {
+						var vs = scene.shaders[p.vertexShader];					
+						vs.uri = 'EntityVS.glsl';						
+					}
+				}						
+			}
+		}
+
+		function modifyTechnique(tname) {
+			if (scene.techniques && tname in scene.techniques) {
+				var t = scene.techniques[tname];
+				t.parameters['lightmap'] = {
+                    "type": 35678
+                };
+                t.uniforms['u_lightmap'] = 'lightmap';
+                modifyProgram(t.program);                
+			}
+		}
+
+		if (scene.materials) {
+			Object.keys(scene.materials).forEach(function(mid) {
+				var m = scene.materials[mid];
+				if (m.values && m.values.diffuse) {
+					var dn = m.values.diffuse;
+					var exp = /(.*)_C_png/;
+					var r = exp.exec(dn);
+					if (r) {
+						var texName2 = r[1] + '_L_png';
+						if (texName == texName2) {
+							m.values['lightmap'] = texName;
+							modifyTechnique(m.technique);
+						}						
+					}
+				}
+			});
+		}
+	}
 }
 
 exports.injectNodes = function(scene, outDir) {
 	replaceDefaultShaders(scene);
 	modifyTechniques(scene);
+	modifyDayAndNightMaterial(scene);
 
 	var procObjs = {};
 	var keys = Object.keys(scene.materials);
@@ -107,7 +180,7 @@ exports.injectNodes = function(scene, outDir) {
 		if (name in objList) {			
 			var arr = objList[name].merge || [];
 			for (let i = 0; i < arr.length; ++i) {
-				var objName = arr[i];
+				var objName = arr[i];				
 
 				if (!(objName in procObjs)) {
 					if (!(objName in objCache)) {
@@ -129,4 +202,6 @@ exports.injectNodes = function(scene, outDir) {
 		}
 
 	});	
+
+	console.log(scene);
 };
