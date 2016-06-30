@@ -84,7 +84,8 @@
 		    "states": {
 		        "enable": [
 		            2929,
-		            3042
+		            3042,
+		            2884
 		        ],
 		        "functions": {
 		            "blendEquationSeparate": [
