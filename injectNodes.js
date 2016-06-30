@@ -88,8 +88,7 @@ function modifyTechniques(scene) {
 					} 
 				}
 				if (!found) {
-					en.push(stateCull);
-					console.log('modded tech', en);
+					en.push(stateCull);					
 				}
 			}
 
