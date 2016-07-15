@@ -180,7 +180,7 @@ function createSceneNode(scene) {
 			}
 		});    
 
-		console.log(nodes);
+		// console.log(nodes);
 	}
 }
 
@@ -198,7 +198,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		scene.extensionsUsed.push('CESIUM_RTC');
 
 		height = 0;
-		console.log('lon', lon, 'lat', lat, 'height', height);
+		// console.log('lon', lon, 'lat', lat, 'height', height);
 		var wpos = cesium.fromDegrees(lon, lat, height);
 		worldPos = wpos;
 
@@ -209,9 +209,9 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 				wpos.z
 			]
 		}; 
-		console.log(wpos);       
+		// console.log(wpos);       
 		rotMat = cesium.eastNorthUpToFixedFrame(wpos);    
-		console.log(rotMat);
+		// console.log(rotMat);
 
 		if (!scene.extensions) {
 			scene.extensions = {};      
@@ -465,25 +465,36 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 	if (rotMat || scaleX || scaleY || scaleZ) {
 		if (scene.meshes) {			
 			var localMat;
+			var blendMat;
 			if (blendRot && (yaw || pitch || roll)) {
-				yaw = yaw | 0;
-				pitch = pitch | 0;
-				roll = roll | 0;				
+				yaw = yaw || 0;
+				pitch = pitch || 0;
+				roll = roll || 0;	
+				scaleX = scaleX || 1;
+				scaleY = scaleY || 1;
+				scaleZ = scaleZ || 1;				
+
+				// console.log(yaw, pitch, roll, yaw || 0);					
 				
 				// blendRot is ccw, column
 				// blendMat is cw, row  
-				var blendMat = matrix.arrToMatrix(blendRot); // implicitly inversed
-				localMat = matrix.createUnityLocalRotationMatrix(blendMat, yaw, pitch, roll);
+				blendMat = matrix.arrToMatrix(blendRot); // implicitly inversed
+				localMat = matrix.createUnityLocalRotationMatrix(blendMat, yaw, pitch, roll, scaleX, scaleY, scaleZ);
+				// console.log(blendMat, localMat);
 
 				// should it be rotated 180 to match cesium coord ??
 				var adjMat = matrix.createUnityRotationMatrix(0, 0, 180);
 				localMat = math.multiply(adjMat, localMat);
+
+				// console.log(rotMat);
 			}
+
+			console.log('blendMat', blendMat);
 
 			var accessorEdited = {};
 			Object.keys(scene.meshes).forEach(function(meshName) {
 				var mesh = scene.meshes[meshName];
-				console.log(meshName);
+				// console.log(meshName);
 				if (mesh.primitives) {
 					for (let i = 0; i < mesh.primitives.length; ++i) {            
 						var obj = mesh.primitives[i];
@@ -509,10 +520,18 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								  y = f32[j + 1];
 								  z = f32[j + 2];
 
-								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
-								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
-								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z + blendRot[12];
+								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z + blendRot[13];
+								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z + blendRot[14];
 								}
+
+								// if (blendMat) {
+								// 	var arr = [f32[j], f32[j + 1], f32[j + 2], 1];
+								// 	arr = matrix.multiplyVectorArr(blendMat, arr);
+								// 	f32[j] = arr[0]; 
+								// 	f32[j + 1] = arr[1]; 
+								// 	f32[j + 2] = arr[2]; 									
+								// }
 
 								z = f32[j + 2];
 
@@ -528,18 +547,18 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 									arr = matrix.multiplyVectorArr(localMat, arr);
 									f32[j] = arr[0]; 
 									f32[j + 1] = arr[1]; 
-									f32[j + 2] = arr[2]; 
+									f32[j + 2] = arr[2]; 									
 								}
 
-								if (scaleX) {
-									f32[j] *= scaleX;
-								}
-								if (scaleY) {
-									f32[j + 1] *= scaleY;
-								}
-								if (scaleZ) {
-									f32[j + 2] *= scaleZ;
-								}
+								// if (scaleX) {
+								// 	f32[j] *= scaleX;
+								// }
+								// if (scaleY) {
+								// 	f32[j + 1] *= scaleY;
+								// }
+								// if (scaleZ) {
+								// 	f32[j + 2] *= scaleZ;
+								// }
 
 								// if (yaw) {
 								// 	var x = f32[j];
