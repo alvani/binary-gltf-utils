@@ -60,17 +60,24 @@ exports.createUnityRotationMatrix = function(yaw, pitch, roll) {
 };
 
 // blendMat: row major blender rotation matrix
-exports.createUnityLocalRotationMatrix = function(blendMat, yaw, pitch, roll) {
+exports.createUnityLocalRotationMatrix = function(blendMat, yaw, pitch, roll, scaleX, scaleY, scaleZ) {
 	// .pos trans = local trans * unity trans * blender trans on unity coord clock wise rot
 	// we need to extract local trans from .pos trans
 	// .pos trans = local trans * (unity trans * blender);
 	// .pos trans * inv(unity trans * blender) = local trans
+	// .pos trans = yaw pitch roll * scale
 
 	var uniMat = this.createRotationMatrix(0, -90, 0, true); // unity will transform -90 cw x axis from blender file	
 	var tm = math.multiply(uniMat, blendMat);
-	var tmTrans = math.transpose(tm);	
+	// var tmTrans = math.transpose(tm);
+	var tmTrans = math.inv(tm);		
 	var posMat = this.createUnityRotationMatrix(yaw, pitch, roll);
-	var localMat = math.multiply(posMat, tmTrans);
+	var scaleMat = this.createScaleMatrix(scaleX, scaleY, scaleZ);
+	// console.log(posMat, scaleMat);
+	var transMat = math.multiply(posMat, scaleMat);	
+	var localMat = math.multiply(transMat, tmTrans);
+	// var localMat = math.multiply(posMat, tmTrans);
+	// console.log(localMat);
 	return localMat;
 };
 
