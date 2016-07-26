@@ -76,7 +76,7 @@ exports.createUnityLocalRotationMatrixEx = function(offsetX, offsetY, offsetZ, y
 	// should it be rotated 180 to match cesium coord ??
 	var adjMat = this.createRotationMatrix(180, 0, 0, true);
 
-	var offMat = this.createTranslationMatrix(44.2, -131.2, -96.2);		
+	var offMat = this.createTranslationMatrix(offsetX, offsetZ, offsetY);		
 	var res = math.multiply(offMat, math.multiply(rotMat, adjMat));	
 
 	return res;
