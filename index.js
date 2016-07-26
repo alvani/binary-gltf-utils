@@ -38,9 +38,17 @@ const argv = require('yargs')
 	.string('scaleX')
 	.describe('scaleX', 'scale value for x axis')
 	.string('scaleY')
-	.describe('scaleY', 'scale value for x axis')
+	.describe('scaleY', 'scale value for y axis')
 	.string('scaleZ')
-	.describe('scaleZ', 'scale value for x axis')  
+	.describe('scaleZ', 'scale value for z axis')
+
+	.string('offsetX')
+	.describe('offsetX', 'scale value for x axis')
+	.string('offsetY')
+	.describe('offsetY', 'scale value for y axis')
+	.string('offsetZ')
+	.describe('offsetZ', 'scale value for z axis')
+
 	// ccw, z up x front y right
 	.string('yaw')
 	.describe('yaw', 'yaw value in degrees')
@@ -197,7 +205,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 	if (argv.rtc) {
 		scene.extensionsUsed.push('CESIUM_RTC');
 
-		height = 0;
+		// height = 0;
 		// console.log('lon', lon, 'lat', lat, 'height', height);
 		var wpos = cesium.fromDegrees(lon, lat, height);
 		worldPos = wpos;
@@ -209,7 +217,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 				wpos.z
 			]
 		}; 
-		// console.log(wpos);       
+		// console.log('wpos', wpos);       
 		rotMat = cesium.eastNorthUpToFixedFrame(wpos);    
 		// console.log(rotMat);
 
@@ -412,7 +420,10 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 	var scaleZ = parseFloat(argv.scaleZ);
 	var yaw = parseFloat(argv.yaw);
 	var pitch = parseFloat(argv.pitch);
-	var roll = parseFloat(argv.roll);  
+	var roll = parseFloat(argv.roll); 
+	var offsetX = parseFloat(argv.offsetX);
+	var offsetY = parseFloat(argv.offsetY);
+	var offsetZ = parseFloat(argv.offsetZ);
 		
 
 	function testBlendRot() {
@@ -487,9 +498,24 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 				localMat = math.multiply(adjMat, localMat);
 
 				// console.log(rotMat);
-			}
+			}			
 
-			console.log('blendMat', blendMat);
+			rotMat[3] = 0;
+			rotMat[7] = 0;
+			rotMat[11] = 0;
+			rotMat[15] = 0;
+			var worldMat = matrix.arrToMatrix(rotMat, false);
+			console.log('worldMat', worldMat);
+
+			offsetX = offsetX || 0;
+			offsetY = offsetY || 0;
+			offsetZ = offsetZ || 0;
+
+			localMat = matrix.createUnityLocalRotationMatrixEx(offsetX, offsetY, offsetZ, yaw, pitch, roll, scaleX, scaleY, scaleZ);
+			localMat = math.multiply(worldMat, localMat);
+			// localMat = worldMat;			
+
+			console.log('localMat', localMat);
 
 			var accessorEdited = {};
 			Object.keys(scene.meshes).forEach(function(meshName) {
@@ -515,15 +541,15 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								var y = f32[j + 1];
 								var z = f32[j + 2];
 								
-								if (blendRot) {
-								  x = f32[j];
-								  y = f32[j + 1];
-								  z = f32[j + 2];
+								// if (blendRot) {
+								//   x = f32[j];
+								//   y = f32[j + 1];
+								//   z = f32[j + 2];
 
-								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z + blendRot[12];
-								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z + blendRot[13];
-								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z + blendRot[14];
-								}
+								//   f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z + blendRot[12];
+								//   f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z + blendRot[13];
+								//   f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z + blendRot[14];
+								// }
 
 								// if (blendMat) {
 								// 	var arr = [f32[j], f32[j + 1], f32[j + 2], 1];
@@ -596,22 +622,22 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								// 	f32[j + 2]  = -sina * y + cosa * z; 
 								// }                   								                                
 
-								if (rotMat) {
-									x = f32[j];
-									y = f32[j + 1];
-									z = f32[j + 2];
+								// if (rotMat) {
+								// 	x = f32[j];
+								// 	y = f32[j + 1];
+								// 	z = f32[j + 2];
 
-									f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
-									f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
-									f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;  
-									// var sx = x;
-									// var sy = -z;
-									// var sz = y;
+								// 	f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
+								// 	f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
+								// 	f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;  
+								// 	// var sx = x;
+								// 	// var sy = -z;
+								// 	// var sz = y;
 
-									// f32[j]      = rotMat[0] * sx + rotMat[1] * sy + rotMat[2] * sz;
-									// f32[j + 1]  = rotMat[4] * sx + rotMat[5] * sy + rotMat[6] * sz;
-									// f32[j + 2]  = rotMat[8] * sx + rotMat[9] * sy + rotMat[10] * sz;                        
-								}                
+								// 	// f32[j]      = rotMat[0] * sx + rotMat[1] * sy + rotMat[2] * sz;
+								// 	// f32[j + 1]  = rotMat[4] * sx + rotMat[5] * sy + rotMat[6] * sz;
+								// 	// f32[j + 2]  = rotMat[8] * sx + rotMat[9] * sy + rotMat[10] * sz;                        
+								// }                
 
 								x = f32[j];
 								y = f32[j + 1];
