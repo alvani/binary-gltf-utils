@@ -823,14 +823,15 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 		// console.log(lons, lats);
 
 		// west, south, east, north, minimum height, maximum height
+		var minh = minHeight + height + offsetY
 		var bounds = {
 			region: [
 				lons[0],
 				lats[0],
 				lons[lons.length - 1],
-				lats[lats.length - 1],
-				0,
-				h
+				lats[lats.length - 1],				
+				minh,				
+				minh + h
 			]
 		};
 
