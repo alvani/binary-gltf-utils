@@ -2,11 +2,11 @@
 	"shaders": {
         "CARPET1FS": {
             "type": 35632,
-            "uri": "CARPET1FS.glsl"
+            "uri": "Carpet1FS.glsl"
         },
-        "CARPET1VS": {
+        "CARPETVS": {
             "type": 35633,
-            "uri": "CARPET1VS.glsl"
+            "uri": "CarpetVS.glsl"
         }
     },
 	"programs": {
@@ -18,7 +18,7 @@
                 "a_texcoord1"
             ],
             "fragmentShader": "CARPET1FS",
-            "vertexShader": "CARPET1VS"
+            "vertexShader": "CARPETVS"
 		}
 	},
 	"techniques": {
