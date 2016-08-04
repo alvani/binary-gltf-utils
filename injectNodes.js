@@ -197,11 +197,20 @@ exports.injectNodes = function(scene, outDir) {
 				var fn = arr[i];
 				var srcPath = path.join('textures', fn)				
 				var dstPPath = path.join(outDir, fn);
-				fs.linkSync(srcPath, dstPPath);				
+				try {
+					fs.linkSync(srcPath, dstPPath);				
+				} catch(err) {				
+				}
+			}
+
+			arr = objList[name].callback || [];
+			for (let i = 0; i < arr.length; ++i) {
+				var call = arr[i];
+				call(scene, name);
 			}
 		}
 
 	});	
 
-	console.log(scene);
+	// console.log(scene);
 };
