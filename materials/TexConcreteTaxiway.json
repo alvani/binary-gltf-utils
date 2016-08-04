@@ -1,0 +1,26 @@
+{
+    "images": {        
+        "Concrete_taxiway02_png": {
+            "name": "Concrete_taxiway02_png",
+            "uri": "Concrete_taxiway02.png"
+        }
+    },
+    "samplers": {
+        "sampler_Concrete_taxiway02_png": {
+            "magFilter": 9729,
+            "minFilter": 9984,
+            "wrapS": 10497,
+            "wrapT": 10497
+        }
+    },
+    "textures": {        
+        "texture_Concrete_taxiway02_png": {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": "sampler_Concrete_taxiway02_png",
+            "source": "Concrete_taxiway02_png",
+            "target": 3553,
+            "type": 5121
+        }
+    }
+}

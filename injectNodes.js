@@ -7,6 +7,7 @@ var objList = {
 	'CARP_RUMPUT-effect': {
 		merge: [
 			'TechCarpet1',
+			'TexRumput',
 			'MatCarpRumput'
 		],
 		textures: [
@@ -16,13 +17,76 @@ var objList = {
 	'CARP_ASPHALT-effect': {
 		merge: [
 			'TechCarpet1',
+			'TexAsphalt',
 			'MatCarpAsphalt'
 		],
 		textures: [
 			'Asphalt03.png'
 		]
+	},
+	'CARPET2_ASPHALT_LONG-effect': {
+		merge: [
+			'TechCarpet2',
+			'TexAsphaltLong',
+			'MatCarpet2AsphaltLong'
+		],
+		textures: [
+			'asphalt_long.png'
+		],
+		// called after merge and texture copy completed
+		callback: [
+			swapDiffuseDetail
+		]
+	},
+	'CARPET2_ASPHALT-effect': {
+		merge: [
+			'TechCarpet2',
+			'TexAsphalt',
+			'MatCarpet2Asphalt'
+		],
+		textures: [
+			'Asphalt03.png'
+		],		
+		callback: [
+			swapDiffuseDetail
+		]
+	},
+	'CARPET2_GRASS-effect': {
+		merge: [
+			'TechCarpet2',
+			'TexRumput',
+			'MatCarpet2Rumput'
+		],
+		textures: [
+			'Rumput03.png'
+		],		
+		callback: [
+			swapDiffuseDetail
+		]
+	},
+	'CARPET2_CONCRETE_TAXIWAY-effect': {
+		merge: [
+			'TechCarpet2',
+			'TexConcreteTaxiway',
+			'MatCarpet2Taxiway'
+		],
+		textures: [
+			'Rumput03.png'
+		],		
+		callback: [
+			swapDiffuseDetail
+		]
 	}
 };
+
+function swapDiffuseDetail(scene, name) {
+	var val = scene.materials[name].values;
+	// swap detail and diffuse
+	var tmp = val.diffuse;
+	val.diffuse = val.detail;
+	val.detail = tmp;
+	console.log(val.diffuse, val.detail);
+}
 
 const defVShader = 'B3DMVS.glsl';
 const defFShader = 'B3DMFS.glsl';

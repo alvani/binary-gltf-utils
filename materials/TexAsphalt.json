@@ -1,0 +1,26 @@
+{
+    "images": {
+        "Asphalt03_png": {
+            "name": "Asphalt03_png",
+            "uri": "Asphalt03.png"
+        }
+    },
+    "samplers": {
+        "sampler_Asphalt03_png": {
+            "magFilter": 9729,
+            "minFilter": 9984,
+            "wrapS": 10497,
+            "wrapT": 10497
+        }
+    },    
+    "textures": {
+        "texture_Asphalt03_png": {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": "sampler_Asphalt03_png",
+            "source": "Asphalt03_png",
+            "target": 3553,
+            "type": 5121
+        }
+    }
+}

@@ -1,0 +1,126 @@
+{	
+	"shaders": {
+        "CARPET2FS": {
+            "type": 35632,
+            "uri": "Carpet2FS.glsl"
+        },
+        "CARPETVS": {
+            "type": 35633,
+            "uri": "CarpetVS.glsl"
+        }
+    },
+	"programs": {
+		"Carpet2Program": {
+			"attributes": [
+                "a_normal",
+                "a_position",
+                "a_texcoord0",
+                "a_texcoord1"
+            ],
+            "fragmentShader": "CARPET2FS",
+            "vertexShader": "CARPETVS"
+		}
+	},
+	"techniques": {
+		"Carpet2Tech": {
+		    "attributes": {
+		        "a_normal": "normal",
+		        "a_position": "position",
+		        "a_texcoord0": "texcoord0",
+		        "a_texcoord1": "texcoord1"
+		    },
+		    "parameters": {
+		        "ambient": {
+		            "type": 35666
+		        },
+		        "diffuse": {
+		            "type": 35678
+		        },
+		        "detail": {
+		            "type": 35678
+		        },
+		        "detail2": {
+		            "type": 35678
+		        },
+		        "lerp": {
+		        	"type": 5126
+		        },
+		        "lerp2": {
+		        	"type": 5126
+		        },
+		        "emission": {
+		            "type": 35666
+		        },
+		        "modelViewMatrix": {
+		            "semantic": "MODELVIEW",
+		            "type": 35676
+		        },
+		        "normal": {
+		            "semantic": "NORMAL",
+		            "type": 35665
+		        },
+		        "normalMatrix": {
+		            "semantic": "MODELVIEWINVERSETRANSPOSE",
+		            "type": 35675
+		        },
+		        "position": {
+		            "semantic": "POSITION",
+		            "type": 35665
+		        },
+		        "projectionMatrix": {
+		            "semantic": "PROJECTION",
+		            "type": 35676
+		        },
+		        "shininess": {
+		            "type": 5126
+		        },
+		        "specular": {
+		            "type": 35666
+		        },
+		        "texcoord0": {
+		            "semantic": "TEXCOORD_0",
+		            "type": 35664
+		        },
+		        "texcoord1": {
+		            "semantic": "TEXCOORD_1",
+		            "type": 35664
+		        }
+		    },
+		    "program": "Carpet2Program",
+		    "states": {
+		        "enable": [
+		            2929,
+		            3042,
+		            2884
+		        ],
+		        "functions": {
+		            "blendEquationSeparate": [
+		                32774,
+		                32774
+		            ],
+		            "blendFuncSeparate": [
+		                1,
+		                771,
+		                1,
+		                771
+		            ],
+		            "depthMask": false
+		        }
+		    },
+		    "uniforms": {
+		        "u_ambient": "ambient",
+		        "u_diffuse": "diffuse",
+		        "u_lerp": "lerp",
+		        "u_lerp2": "lerp2",
+		        "u_detail": "detail",
+		        "u_detail2": "detail2",
+		        "u_emission": "emission",
+		        "u_modelViewMatrix": "modelViewMatrix",
+		        "u_normalMatrix": "normalMatrix",
+		        "u_projectionMatrix": "projectionMatrix",
+		        "u_shininess": "shininess",
+		        "u_specular": "specular"
+		    }
+		}
+	}
+}

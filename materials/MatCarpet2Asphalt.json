@@ -1,0 +1,13 @@
+{	
+	"materials": {
+        "CARPET2_ASPHALT-effect": {            
+            "technique": "Carpet2Tech",
+            "values": {                
+                "detail": "texture_Asphalt03_png",
+                "detail2": "texture_Asphalt03_png",
+                "lerp": 0.4285714,
+                "lerp2": 0.4821428
+            }
+        }        
+    }
+}
