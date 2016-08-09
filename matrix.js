@@ -66,18 +66,21 @@ exports.createUnityLocalRotationMatrixEx = function(offsetX, offsetY, offsetZ, y
 
 		
 
-	var uniMat = this.createRotationMatrix(0, -90, 0, true); // unity will transform -90 cw x axis from blender file		
+	var uniMat = this.createRotationMatrix(0, -90, 0, true); // unity will transform -90 cw x axis from blender file				
 	var posMat = this.createRotationMatrix(yaw, pitch, roll, true);
 	var invUniMat = math.inv(uniMat);
 	var rotMat = math.multiply(posMat, invUniMat);	
-
 	// var rotMat = this.createRotationMatrix(-149.2203, 0, 0, true);	
 
 	// should it be rotated 180 to match cesium coord ??
 	var adjMat = this.createRotationMatrix(180, 0, 0, true);
+	rotMat = math.multiply(rotMat, adjMat)
+	
+	var scaleMat = this.createScaleMatrix(scaleX, scaleY, scaleZ);		
 
-	var offMat = this.createTranslationMatrix(offsetX, offsetZ, offsetY);		
-	var res = math.multiply(offMat, math.multiply(rotMat, adjMat));	
+	var offMat = this.createTranslationMatrix(offsetX, offsetZ, offsetY);
+	var res = math.multiply(offMat, math.multiply(rotMat, scaleMat));
+	// res = math.multiply(scaleMat, offMat);
 
 	return res;
 }
