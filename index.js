@@ -681,15 +681,15 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								var y = f32[j + 1];
 								var z = f32[j + 2];
 								
-								if (blendRot) {
-								  x = f32[j];
-								  y = f32[j + 1];
-								  z = f32[j + 2];
+								// if (blendRot) {
+								//   x = f32[j];
+								//   y = f32[j + 1];
+								//   z = f32[j + 2];
 
-								  f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
-								  f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
-								  f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
-								}
+								//   f32[j]      = blendRot[0] * x + blendRot[4] * y + blendRot[8] * z;
+								//   f32[j + 1]  = blendRot[1] * x + blendRot[5] * y + blendRot[9] * z;
+								//   f32[j + 2]  = blendRot[2] * x + blendRot[6] * y + blendRot[10] * z;
+								// }
 
 								if (localMat) {
 									var arr = [f32[j], f32[j + 1], f32[j + 2], 1];
@@ -699,15 +699,15 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 									f32[j + 2] = arr[2]; 
 								}             								                                
 
-								if (rotMat) {
-									x = f32[j];
-									y = f32[j + 1];
-									z = f32[j + 2];
+								// if (rotMat) {
+								// 	x = f32[j];
+								// 	y = f32[j + 1];
+								// 	z = f32[j + 2];
 
-									f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
-									f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
-									f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;									
-								} 
+								// 	f32[j]      = rotMat[0] * x + rotMat[1] * y + rotMat[2] * z;
+								// 	f32[j + 1]  = rotMat[4] * x + rotMat[5] * y + rotMat[6] * z;
+								// 	f32[j + 2]  = rotMat[8] * x + rotMat[9] * y + rotMat[10] * z;									
+								// } 
 							}
 						}
 					}
