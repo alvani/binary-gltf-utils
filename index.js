@@ -692,7 +692,7 @@ fs.readFileAsync(filename, 'utf-8').then(function (gltf) {
 								// }
 
 								if (localMat) {
-									var arr = [f32[j], f32[j + 1], f32[j + 2], 1];
+									var arr = [f32[j], f32[j + 1], f32[j + 2], 0];
 									arr = matrix.multiplyVectorArr(localMat, arr);
 									f32[j] = arr[0]; 
 									f32[j + 1] = arr[1]; 
