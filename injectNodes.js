@@ -213,6 +213,19 @@ function modifyDayAndNightMaterial(scene) {
 			}
 		}
 
+		var entTechName = 'EntityTech';
+
+		function injectEntityTech() {			
+			if (scene.techniques && !(entTechName in scene.techniques)) {
+				var objName = 'TechEntity';
+				if (!(objName in objCache)) {
+					loadObject(objName);
+				}
+				var obj = objCache[objName];				
+				mergeNode(scene, obj);
+			}
+		}
+
 		if (scene.materials) {
 			Object.keys(scene.materials).forEach(function(mid) {
 				var m = scene.materials[mid];
@@ -224,7 +237,9 @@ function modifyDayAndNightMaterial(scene) {
 						var texName2 = r[1] + '_L_png';
 						if (texName == texName2) {
 							m.values['lightmap'] = texName;
-							modifyTechnique(m.technique);
+							injectEntityTech();
+							m.technique = entTechName;
+							// modifyTechnique(m.technique);
 						}						
 					}
 				}
