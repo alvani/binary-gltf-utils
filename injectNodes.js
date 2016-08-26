@@ -71,7 +71,7 @@ var objList = {
 			'MatCarpet2Taxiway'
 		],
 		textures: [
-			'Rumput03.png'
+			'Concrete_taxiway02.png'
 		],		
 		callback: [
 			swapDiffuseDetail
