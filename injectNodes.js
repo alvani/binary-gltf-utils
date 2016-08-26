@@ -86,6 +86,16 @@ var objList = {
 		callback: [
 			swapDiffuseDetail
 		]
+	},
+	'Skid-effect': {
+		callback: [
+			setPolygonOffset
+		]
+	},
+	'Marking-effect': {
+		callback: [
+			setPolygonOffset
+		]
 	}
 };
 
@@ -95,7 +105,30 @@ function swapDiffuseDetail(scene, name) {
 	var tmp = val.diffuse;
 	val.diffuse = val.detail;
 	val.detail = tmp;
-	console.log(val.diffuse, val.detail);
+	// console.log(val.diffuse, val.detail);
+}
+
+function setPolygonOffset(scene, name) {
+	var tname = scene.materials[name].technique;
+	var t = scene.techniques[tname];
+
+	var arr = t.states.enable
+	var len = arr.length;
+	const code = 32823;
+	var found = false;
+	for (var i = 0; i < len; ++i) {
+		if (arr[i] == code) {
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		arr.push(32823);
+		t.states.functions['polygonOffset'] = [-6, -6];
+	}
+	console.log('setPolygonOffset', t);
+		
 }
 
 const defVShader = 'B3DMVS.glsl';
