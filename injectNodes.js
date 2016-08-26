@@ -24,6 +24,16 @@ var objList = {
 			'Asphalt03.png'
 		]
 	},
+	'CARPET_SAND-effect': {
+		merge: [
+			'TechCarpet1',
+			'TexSand',
+			'MatCarpetSand'
+		],
+		textures: [
+			'sand01.jpg'
+		]
+	},
 	'CARPET2_ASPHALT_LONG-effect': {
 		merge: [
 			'TechCarpet2',
