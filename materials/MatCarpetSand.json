@@ -1,0 +1,11 @@
+{	
+	"materials": {
+        "CARPET_SAND-effect": {            
+            "technique": "Carpet1Tech",
+            "values": {                
+                "detail": "texture_Sand01_jpg",
+                "lerp": 0.6964286
+            }
+        }        
+    }
+}
